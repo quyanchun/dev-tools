@@ -1,4 +1,5 @@
 use rusqlite::{Connection, Result};
+use tauri::Manager;
 
 pub mod models;
 pub mod repository;
