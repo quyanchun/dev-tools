@@ -2,45 +2,45 @@
 export interface Button {
   id: string;
   name: string;
-  icon?: string;
-  scriptType: 'shell' | 'js' | 'python';
-  scriptContent: string;
-  folderId?: string;
+  icon?: string | null;
+  script_type: 'shell' | 'javascript' | 'python';
+  script_content: string;
+  folder_id?: string | null;
   position: number;
-  createdAt: number;
-  updatedAt: number;
+  created_at: number;
+  updated_at: number;
 }
 
 // 文件夹类型
 export interface Folder {
   id: string;
   name: string;
-  icon?: string;
+  icon?: string | null;
   position: number;
-  createdAt: number;
+  created_at: number;
 }
 
 // 监控类型
 export interface Monitor {
   id: string;
   name: string;
-  icon?: string;
-  monitorType: 'process' | 'api';
+  icon?: string | null;
+  monitor_type: 'process' | 'api';
   target: string;
-  checkInterval: number;
-  expectedResult?: string;
-  alertOnFailure: boolean;
-  isActive: boolean;
-  lastCheckTime?: number;
-  lastStatus?: 'running' | 'stopped' | 'error';
-  createdAt: number;
+  check_interval: number;
+  expected_result?: string | null;
+  alert_on_failure: boolean;
+  is_active: boolean;
+  last_check_time?: number | null;
+  last_status?: string | null;
+  created_at: number;
 }
 
 // 日志类型
 export interface LogEntry {
   id: string;
-  buttonId?: string;
-  monitorId?: string;
+  button_id?: string | null;
+  monitor_id?: string | null;
   level: 'info' | 'warning' | 'error';
   message: string;
   timestamp: number;

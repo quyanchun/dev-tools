@@ -1,5 +1,6 @@
 mod commands;
 mod database;
+mod executor;
 
 use std::sync::Mutex;
 use tauri::Manager;
@@ -16,7 +17,22 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![commands::test_db_connection])
+        .invoke_handler(tauri::generate_handler![
+            commands::test_db_connection,
+            // Button commands
+            commands::create_button,
+            commands::get_all_buttons,
+            commands::get_button,
+            commands::update_button,
+            commands::delete_button,
+            commands::get_buttons_by_folder,
+            // Log commands
+            commands::get_logs,
+            commands::get_logs_by_button,
+            commands::clear_logs,
+            // Execution commands
+            commands::execute_script,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

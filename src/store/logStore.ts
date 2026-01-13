@@ -7,7 +7,7 @@ interface LogState {
   maxLogs: number;
   addLog: (log: LogEntry) => void;
   clearLogs: () => void;
-  togglePanel: () => void;
+  togglePanel: (open?: boolean) => void;
   setMaxLogs: (max: number) => void;
 }
 
@@ -25,6 +25,6 @@ export const useLogStore = create<LogState>((set) => ({
       return { logs: newLogs };
     }),
   clearLogs: () => set({ logs: [] }),
-  togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
+  togglePanel: (open) => set((state) => ({ isPanelOpen: open !== undefined ? open : !state.isPanelOpen })),
   setMaxLogs: (max) => set({ maxLogs: max }),
 }));
