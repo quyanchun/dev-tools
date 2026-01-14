@@ -16,18 +16,21 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { useLauncherStore } from '../../../store/launcherStore';
-import { updateButton, updateButtonPositions } from '../../../api/tauri';
+import { updateButton, updateButtonPositions, updateMonitor } from '../../../api/tauri';
 import { useLogStore } from '../../../store/logStore';
 import ButtonCard from './ButtonCard';
-import type { Button } from '../../../types';
+import MonitorCard from './MonitorCard';
+import type { Button, Monitor } from '../../../types';
 
 interface DragDropContextType {
   activeButton: Button | null;
+  activeMonitor: Monitor | null;
   isRootOver: boolean;
 }
 
 const DragDropContext = createContext<DragDropContextType>({
   activeButton: null,
+  activeMonitor: null,
   isRootOver: false,
 });
 
@@ -35,12 +38,15 @@ export const useDragDrop = () => useContext(DragDropContext);
 
 interface DragDropWrapperProps {
   children: ReactNode;
+  monitors: Monitor[];
+  onMonitorsChange: (monitors: Monitor[]) => void;
 }
 
-export default function DragDropWrapper({ children }: DragDropWrapperProps) {
+export default function DragDropWrapper({ children, monitors, onMonitorsChange }: DragDropWrapperProps) {
   const { buttons, setButtons } = useLauncherStore();
   const { addLog } = useLogStore();
   const [activeButton, setActiveButton] = useState<Button | null>(null);
+  const [activeMonitor, setActiveMonitor] = useState<Monitor | null>(null);
 
   // 根目录 droppable - 用于检测 isOver
   const { isOver: isRootOver } = useDroppable({
@@ -60,16 +66,68 @@ export default function DragDropWrapper({ children }: DragDropWrapperProps) {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const button = buttons.find((b) => b.id === active.id);
-    setActiveButton(button || null);
+    const activeId = String(active.id);
+    
+    if (activeId.startsWith('monitor-')) {
+      const monitorId = activeId.replace('monitor-', '');
+      const monitor = monitors.find((m) => m.id === monitorId);
+      setActiveMonitor(monitor || null);
+      setActiveButton(null);
+    } else {
+      const button = buttons.find((b) => b.id === activeId);
+      setActiveButton(button || null);
+      setActiveMonitor(null);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveButton(null);
+    setActiveMonitor(null);
 
     if (!over) return;
 
+    const activeId = String(active.id);
+    const isMonitor = activeId.startsWith('monitor-');
+
+    // 处理监控拖拽
+    if (isMonitor) {
+      const monitorId = activeId.replace('monitor-', '');
+      const draggedMonitor = monitors.find((m) => m.id === monitorId);
+      if (!draggedMonitor) return;
+
+      // 拖拽到文件夹
+      if (typeof over.id === 'string' && over.id.startsWith('folder-')) {
+        const folderId = over.id.replace('folder-', '');
+        if (draggedMonitor.folder_id !== folderId) {
+          try {
+            const updatedMonitor = { ...draggedMonitor, folder_id: folderId };
+            await updateMonitor(draggedMonitor.id, updatedMonitor);
+            onMonitorsChange(monitors.map((m) => m.id === monitorId ? updatedMonitor : m));
+          } catch (error) {
+            console.error('移动监控到文件夹失败:', error);
+          }
+        }
+        return;
+      }
+
+      // 拖拽到根目录
+      if (over.id === 'root-droppable') {
+        if (draggedMonitor.folder_id !== null) {
+          try {
+            const updatedMonitor = { ...draggedMonitor, folder_id: null };
+            await updateMonitor(draggedMonitor.id, updatedMonitor);
+            onMonitorsChange(monitors.map((m) => m.id === monitorId ? updatedMonitor : m));
+          } catch (error) {
+            console.error('移动监控到根目录失败:', error);
+          }
+        }
+        return;
+      }
+      return;
+    }
+
+    // 处理按钮拖拽
     const activeButton = buttons.find((b) => b.id === active.id);
     if (!activeButton) return;
 
@@ -163,7 +221,7 @@ export default function DragDropWrapper({ children }: DragDropWrapperProps) {
   };
 
   return (
-    <DragDropContext.Provider value={{ activeButton, isRootOver }}>
+    <DragDropContext.Provider value={{ activeButton, activeMonitor, isRootOver }}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -180,6 +238,13 @@ export default function DragDropWrapper({ children }: DragDropWrapperProps) {
                 button={activeButton}
                 onExecute={() => {}}
                 status="idle"
+              />
+            </div>
+          ) : activeMonitor ? (
+            <div className="opacity-90 rotate-3 scale-105 shadow-2xl">
+              <MonitorCard
+                monitor={activeMonitor}
+                onShowDetails={() => {}}
               />
             </div>
           ) : null}

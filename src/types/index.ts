@@ -33,6 +33,8 @@ export interface Monitor {
   is_active: boolean;
   last_check_time?: number | null;
   last_status?: string | null;
+  folder_id?: string | null;
+  position: number;
   created_at: number;
 }
 

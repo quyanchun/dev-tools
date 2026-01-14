@@ -1,20 +1,28 @@
-import { useState } from 'react';
-import { createFolder } from '../../../api/tauri';
+import { useState, useEffect } from 'react';
+import { updateFolder } from '../../../api/tauri';
 import type { Folder } from '../../../types';
 
-interface CreateFolderModalProps {
-  isOpen: boolean;
+interface EditFolderModalProps {
+  folder: Folder | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function CreateFolderModal({ isOpen, onClose, onSuccess }: CreateFolderModalProps) {
+export default function EditFolderModal({ folder, onClose, onSuccess }: EditFolderModalProps) {
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (folder) {
+      setName(folder.name);
+    }
+  }, [folder]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!folder) return;
 
     if (!name.trim()) {
       setError('请输入文件夹名称');
@@ -25,32 +33,27 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }: Create
     setError('');
 
     try {
-      const folder: Folder = {
-        id: crypto.randomUUID(),
+      const updatedFolder: Folder = {
+        ...folder,
         name: name.trim(),
-        icon: null,
-        position: Math.floor(Date.now() / 1000),
-        created_at: Math.floor(Date.now() / 1000),
       };
 
-      await createFolder(folder);
-      setName('');
+      await updateFolder(folder.id, updatedFolder);
       onSuccess();
       onClose();
     } catch (err) {
-      setError(`创建失败: ${err}`);
+      setError(`更新失败: ${err}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setName('');
     setError('');
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!folder) return null;
 
   return (
     <div 
@@ -66,7 +69,7 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }: Create
         className="glass-modal w-full max-w-md p-6 animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-bold text-xl mb-6">创建新文件夹</h3>
+        <h3 className="font-bold text-xl mb-6">编辑文件夹</h3>
 
         <form onSubmit={handleSubmit}>
           {/* 文件夹名称 */}
@@ -112,10 +115,10 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }: Create
               {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm"></span>
-                  创建中...
+                  保存中...
                 </>
               ) : (
-                '创建'
+                '保存'
               )}
             </button>
           </div>

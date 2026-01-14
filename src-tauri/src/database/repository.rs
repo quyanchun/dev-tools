@@ -231,12 +231,13 @@ pub fn clear_all_logs(conn: &Connection) -> Result<()> {
 /// Create a new monitor in the database
 pub fn create_monitor(conn: &Connection, monitor: &Monitor) -> Result<String> {
     conn.execute(
-        "INSERT INTO monitors (id, name, monitor_type, target, check_interval, expected_result,
-         alert_on_failure, is_active, last_check_time, last_status, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        "INSERT INTO monitors (id, name, icon, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, folder_id, position, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         (
             &monitor.id,
             &monitor.name,
+            &monitor.icon,
             &monitor.monitor_type,
             &monitor.target,
             &monitor.check_interval,
@@ -245,6 +246,8 @@ pub fn create_monitor(conn: &Connection, monitor: &Monitor) -> Result<String> {
             &monitor.is_active,
             &monitor.last_check_time,
             &monitor.last_status,
+            &monitor.folder_id,
+            &monitor.position,
             &monitor.created_at,
         ),
     )?;
@@ -254,9 +257,9 @@ pub fn create_monitor(conn: &Connection, monitor: &Monitor) -> Result<String> {
 /// Get all monitors
 pub fn get_all_monitors(conn: &Connection) -> Result<Vec<Monitor>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, monitor_type, target, check_interval, expected_result,
-         alert_on_failure, is_active, last_check_time, last_status, created_at
-         FROM monitors ORDER BY created_at DESC",
+        "SELECT id, name, icon, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, folder_id, position, created_at
+         FROM monitors ORDER BY position, created_at DESC",
     )?;
 
     let monitors = stmt
@@ -264,15 +267,18 @@ pub fn get_all_monitors(conn: &Connection) -> Result<Vec<Monitor>> {
             Ok(Monitor {
                 id: row.get(0)?,
                 name: row.get(1)?,
-                monitor_type: row.get(2)?,
-                target: row.get(3)?,
-                check_interval: row.get(4)?,
-                expected_result: row.get(5)?,
-                alert_on_failure: row.get(6)?,
-                is_active: row.get(7)?,
-                last_check_time: row.get(8)?,
-                last_status: row.get(9)?,
-                created_at: row.get(10)?,
+                icon: row.get(2)?,
+                monitor_type: row.get(3)?,
+                target: row.get(4)?,
+                check_interval: row.get(5)?,
+                expected_result: row.get(6)?,
+                alert_on_failure: row.get(7)?,
+                is_active: row.get(8)?,
+                last_check_time: row.get(9)?,
+                last_status: row.get(10)?,
+                folder_id: row.get(11)?,
+                position: row.get(12)?,
+                created_at: row.get(13)?,
             })
         })?
         .collect::<Result<Vec<_>>>()?;
@@ -283,8 +289,8 @@ pub fn get_all_monitors(conn: &Connection) -> Result<Vec<Monitor>> {
 /// Get a single monitor by ID
 pub fn get_monitor_by_id(conn: &Connection, id: &str) -> Result<Monitor> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, monitor_type, target, check_interval, expected_result,
-         alert_on_failure, is_active, last_check_time, last_status, created_at
+        "SELECT id, name, icon, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, folder_id, position, created_at
          FROM monitors WHERE id = ?1",
     )?;
 
@@ -292,15 +298,18 @@ pub fn get_monitor_by_id(conn: &Connection, id: &str) -> Result<Monitor> {
         Ok(Monitor {
             id: row.get(0)?,
             name: row.get(1)?,
-            monitor_type: row.get(2)?,
-            target: row.get(3)?,
-            check_interval: row.get(4)?,
-            expected_result: row.get(5)?,
-            alert_on_failure: row.get(6)?,
-            is_active: row.get(7)?,
-            last_check_time: row.get(8)?,
-            last_status: row.get(9)?,
-            created_at: row.get(10)?,
+            icon: row.get(2)?,
+            monitor_type: row.get(3)?,
+            target: row.get(4)?,
+            check_interval: row.get(5)?,
+            expected_result: row.get(6)?,
+            alert_on_failure: row.get(7)?,
+            is_active: row.get(8)?,
+            last_check_time: row.get(9)?,
+            last_status: row.get(10)?,
+            folder_id: row.get(11)?,
+            position: row.get(12)?,
+            created_at: row.get(13)?,
         })
     })?;
 
@@ -311,12 +320,13 @@ pub fn get_monitor_by_id(conn: &Connection, id: &str) -> Result<Monitor> {
 pub fn update_monitor(conn: &Connection, id: &str, monitor: &Monitor) -> Result<()> {
     conn.execute(
         "UPDATE monitors
-         SET name = ?1, monitor_type = ?2, target = ?3, check_interval = ?4,
-             expected_result = ?5, alert_on_failure = ?6, is_active = ?7,
-             last_check_time = ?8, last_status = ?9
-         WHERE id = ?10",
+         SET name = ?1, icon = ?2, monitor_type = ?3, target = ?4, check_interval = ?5,
+             expected_result = ?6, alert_on_failure = ?7, is_active = ?8,
+             last_check_time = ?9, last_status = ?10, folder_id = ?11, position = ?12
+         WHERE id = ?13",
         (
             &monitor.name,
+            &monitor.icon,
             &monitor.monitor_type,
             &monitor.target,
             &monitor.check_interval,
@@ -325,6 +335,8 @@ pub fn update_monitor(conn: &Connection, id: &str, monitor: &Monitor) -> Result<
             &monitor.is_active,
             &monitor.last_check_time,
             &monitor.last_status,
+            &monitor.folder_id,
+            &monitor.position,
             id,
         ),
     )?;

@@ -1,21 +1,19 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import ButtonCard from './ButtonCard';
-import type { Button } from '../../../types';
+import MonitorCard from './MonitorCard';
+import type { Monitor } from '../../../types';
 
-interface DraggableButtonProps {
-  button: Button;
-  onExecute: (button_id: string) => void;
-  status: 'idle' | 'running' | 'success' | 'error';
+interface DraggableMonitorCardProps {
+  monitor: Monitor;
+  onShowDetails: (monitor: Monitor) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export default function DraggableButton({ 
-  button, 
-  onExecute, 
-  status,
+export default function DraggableMonitorCard({ 
+  monitor, 
+  onShowDetails,
   onContextMenu,
-}: DraggableButtonProps) {
+}: DraggableMonitorCardProps) {
   const {
     attributes,
     listeners,
@@ -24,10 +22,10 @@ export default function DraggableButton({
     transition,
     isDragging,
   } = useSortable({
-    id: button.id,
+    id: `monitor-${monitor.id}`,
     data: {
-      type: 'button',
-      button,
+      type: 'monitor',
+      monitor,
     }
   });
 
@@ -45,14 +43,10 @@ export default function DraggableButton({
       {...attributes}
       {...listeners}
       className={isDragging ? 'z-50' : ''}
-      data-context-item="button"
+      data-context-item="monitor"
       onContextMenu={onContextMenu}
     >
-      <ButtonCard
-        button={button}
-        onExecute={onExecute}
-        status={status}
-      />
+      <MonitorCard monitor={monitor} onShowDetails={onShowDetails} />
     </div>
   );
 }

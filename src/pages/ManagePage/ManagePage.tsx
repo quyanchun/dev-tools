@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLauncherStore } from '../../store/launcherStore';
 import { useMonitorStore } from '../../store/monitorStore';
-import { createButton, getAllButtons, updateButton, deleteButton } from '../../api/tauri';
+import { createButton, getAllButtons, updateButton, deleteButton, getButton } from '../../api/tauri';
 import type { Button, Monitor } from '../../types';
 import ButtonList from './components/ButtonList';
 import ButtonForm from './components/ButtonForm';
@@ -11,6 +12,7 @@ import MonitorForm from './components/MonitorForm';
 type TabType = 'buttons' | 'monitors';
 
 export default function ManagePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { buttons, setButtons } = useLauncherStore();
   const {
     monitors,
@@ -27,6 +29,26 @@ export default function ManagePage() {
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Button | Monitor | null>(null);
+
+  // 处理 URL 参数中的编辑请求
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId) {
+      // 加载要编辑的按钮
+      const loadButtonForEdit = async () => {
+        try {
+          const button = await getButton(editId);
+          setEditingButton(button);
+          setIsFormOpen(true);
+          // 清除 URL 参数
+          setSearchParams({});
+        } catch (error) {
+          console.error('加载按钮失败:', error);
+        }
+      };
+      loadButtonForEdit();
+    }
+  }, [searchParams, setSearchParams]);
 
   // 加载按钮列表
   useEffect(() => {

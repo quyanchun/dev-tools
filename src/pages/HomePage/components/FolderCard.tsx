@@ -4,22 +4,32 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggableButton from './DraggableButton';
-import type { Folder, Button } from '../../../types';
+import DraggableMonitorCard from './DraggableMonitorCard';
+import type { Folder, Button, Monitor } from '../../../types';
 
 interface FolderCardProps {
   folder: Folder;
   buttons: Button[];
+  monitors?: Monitor[];
   onExecute: (id: string) => void;
   buttonStatuses: Record<string, 'idle' | 'running' | 'success' | 'error'>;
+  onContextMenu?: (e: React.MouseEvent) => void;
+  onButtonContextMenu?: (e: React.MouseEvent, button: Button) => void;
+  onShowMonitorDetails?: (monitor: Monitor) => void;
 }
 
 export default function FolderCard({
   folder,
   buttons,
+  monitors = [],
   onExecute,
   buttonStatuses,
+  onContextMenu,
+  onButtonContextMenu,
+  onShowMonitorDetails,
 }: FolderCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const totalItems = buttons.length + monitors.length;
 
   // 文件夹本身可拖拽排序
   const {
@@ -58,9 +68,10 @@ export default function FolderCard({
     setDroppableRef(node);
   };
 
-  // 获取前9个按钮用于预览
-  const previewButtons = buttons.slice(0, 9);
-  const hasMore = buttons.length > 9;
+  // 获取前9个项目用于预览（按钮和监控混合）
+  const previewItems = [...monitors, ...buttons].slice(0, 9);
+  const hasMore = totalItems > 9;
+  const allItemIds = [...monitors.map(m => `monitor-${m.id}`), ...buttons.map(b => b.id)];
 
   return (
     <>
@@ -71,10 +82,12 @@ export default function FolderCard({
           style={style}
           {...attributes}
           {...listeners}
+          data-context-item="folder"
           className={`glass-card cursor-pointer transition-all duration-300 w-[120px] h-[120px] relative group ${
             isOver ? 'ring-2 ring-primary scale-105' : 'hover:scale-105'
           } ${isDragging ? 'z-50' : ''}`}
           onClick={() => setIsOpen(true)}
+          onContextMenu={onContextMenu}
         >
           {/* 文件夹背景 */}
           <div className="absolute inset-0 rounded-[20px] overflow-hidden">
@@ -85,16 +98,16 @@ export default function FolderCard({
           <div className="relative h-full p-3 flex flex-col">
             {/* 预览网格 */}
             <div className="flex-1 grid grid-cols-3 gap-1 mb-2">
-              {previewButtons.map((button) => (
+              {previewItems.map((item) => (
                 <div
-                  key={button.id}
+                  key={'monitor_type' in item ? `m-${item.id}` : item.id}
                   className="flex items-center justify-center text-xl bg-base-100/30 rounded-lg backdrop-blur-sm"
                 >
-                  {button.icon || '📦'}
+                  {'monitor_type' in item ? '📊' : (item.icon || '📦')}
                 </div>
               ))}
               {/* 填充空白格子 */}
-              {Array.from({ length: Math.max(0, 9 - previewButtons.length) }).map((_, index) => (
+              {Array.from({ length: Math.max(0, 9 - previewItems.length) }).map((_, index) => (
                 <div
                   key={`empty-${index}`}
                   className="bg-base-100/10 rounded-lg"
@@ -108,14 +121,14 @@ export default function FolderCard({
                 {folder.name}
               </h3>
               <p className="text-[10px] text-base-content/60">
-                {buttons.length} 项
+                {totalItems} 项
               </p>
             </div>
 
             {/* 更多指示器 */}
             {hasMore && (
               <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                {buttons.length}
+                {totalItems}
               </div>
             )}
           </div>
@@ -148,7 +161,7 @@ export default function FolderCard({
                 <div>
                   <h2 className="text-2xl font-bold">{folder.name}</h2>
                   <p className="text-xs text-base-content/60 mt-0.5">
-                    {buttons.length} 个按钮
+                    {totalItems} 个项目
                   </p>
                 </div>
               </div>
@@ -164,18 +177,28 @@ export default function FolderCard({
 
             {/* 文件夹内容 */}
             <div className="flex-1 overflow-y-auto p-6">
-              {buttons.length > 0 ? (
+              {totalItems > 0 ? (
                 <SortableContext
-                  items={buttons.map((b) => b.id)}
+                  items={allItemIds}
                   strategy={rectSortingStrategy}
                 >
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
+                    {/* 监控 */}
+                    {monitors.map((monitor) => (
+                      <DraggableMonitorCard
+                        key={monitor.id}
+                        monitor={monitor}
+                        onShowDetails={onShowMonitorDetails || (() => {})}
+                      />
+                    ))}
+                    {/* 按钮 */}
                     {buttons.map((button) => (
                       <DraggableButton
                         key={button.id}
                         button={button}
                         onExecute={onExecute}
                         status={buttonStatuses[button.id] || 'idle'}
+                        onContextMenu={onButtonContextMenu ? (e) => onButtonContextMenu(e, button) : undefined}
                       />
                     ))}
                   </div>
@@ -197,7 +220,7 @@ export default function FolderCard({
                       />
                     </svg>
                     <p className="text-base font-medium mb-1">文件夹为空</p>
-                    <p className="text-sm">拖拽按钮到这里</p>
+                    <p className="text-sm">拖拽按钮或监控到这里</p>
                   </div>
                 </div>
               )}
@@ -209,7 +232,7 @@ export default function FolderCard({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>拖拽按钮到模态框外可移出文件夹</span>
+                <span>拖拽项目到模态框外可移出文件夹</span>
               </div>
             </div>
           </div>

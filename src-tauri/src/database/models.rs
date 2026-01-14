@@ -26,6 +26,7 @@ pub struct Folder {
 pub struct Monitor {
     pub id: String,
     pub name: String,
+    pub icon: Option<String>,
     pub monitor_type: String,
     pub target: String,
     pub check_interval: i32,
@@ -34,6 +35,8 @@ pub struct Monitor {
     pub is_active: bool,
     pub last_check_time: Option<i64>,
     pub last_status: Option<String>,
+    pub folder_id: Option<String>,
+    pub position: i32,
     pub created_at: i64,
 }
 

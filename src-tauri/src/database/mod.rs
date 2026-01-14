@@ -55,6 +55,7 @@ fn create_tables(conn: &Connection) -> Result<()> {
         "CREATE TABLE IF NOT EXISTS monitors (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            icon TEXT,
             monitor_type TEXT NOT NULL,
             target TEXT NOT NULL,
             check_interval INTEGER NOT NULL,
@@ -63,10 +64,18 @@ fn create_tables(conn: &Connection) -> Result<()> {
             is_active BOOLEAN NOT NULL,
             last_check_time INTEGER,
             last_status TEXT,
-            created_at INTEGER NOT NULL
+            folder_id TEXT,
+            position INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (folder_id) REFERENCES folders(id)
         )",
         [],
     )?;
+
+    // 迁移：为旧表添加新字段
+    let _ = conn.execute("ALTER TABLE monitors ADD COLUMN icon TEXT", []);
+    let _ = conn.execute("ALTER TABLE monitors ADD COLUMN folder_id TEXT REFERENCES folders(id)", []);
+    let _ = conn.execute("ALTER TABLE monitors ADD COLUMN position INTEGER NOT NULL DEFAULT 0", []);
 
     // logs 表
     conn.execute(
