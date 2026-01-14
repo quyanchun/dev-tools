@@ -41,7 +41,7 @@ export default function GeneralSettings() {
             </div>
             <input
               type="checkbox"
-              className="toggle toggle-primary"
+              className="toggle"
               checked={executeConfirmation}
               onChange={(e) => setExecuteConfirmation(e.target.checked)}
             />
@@ -54,7 +54,7 @@ export default function GeneralSettings() {
             </div>
             <input
               type="checkbox"
-              className="toggle toggle-primary"
+              className="toggle"
               checked={notificationsEnabled}
               onChange={(e) => setNotificationsEnabled(e.target.checked)}
             />
@@ -73,7 +73,7 @@ export default function GeneralSettings() {
             </div>
             <input
               type="checkbox"
-              className="toggle toggle-primary"
+              className="toggle"
               checked={autoStartMonitors}
               onChange={(e) => setAutoStartMonitors(e.target.checked)}
             />

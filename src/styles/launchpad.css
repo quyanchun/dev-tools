@@ -506,3 +506,31 @@
     opacity: 1;
   }
 }
+
+/* ==================== 自定义 Toggle 开关颜色 ==================== */
+
+/* 亮色模式 - 关闭状态：浅灰 */
+[data-theme="light"] .toggle:not(:checked) {
+  --tglbg: #e5e5ea !important;
+  background-color: #e5e5ea !important;
+}
+
+/* 亮色模式 - 开启状态：iOS 绿色 */
+[data-theme="light"] .toggle:checked {
+  --tglbg: #34c759 !important;
+  background-color: #34c759 !important;
+  border-color: #34c759 !important;
+}
+
+/* 暗色模式 - 关闭状态：深灰 */
+[data-theme="dark"] .toggle:not(:checked) {
+  --tglbg: #48484a !important;
+  background-color: #48484a !important;
+}
+
+/* 暗色模式 - 开启状态：蓝色 */
+[data-theme="dark"] .toggle:checked {
+  --tglbg: #3b82f6 !important;
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}

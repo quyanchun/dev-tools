@@ -138,7 +138,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
                 <input
                   type="checkbox"
-                  className="toggle toggle-primary toggle-sm"
+                  className="toggle toggle-sm"
                   checked={executeConfirmation}
                   onChange={(e) => setExecuteConfirmation(e.target.checked)}
                 />
@@ -150,7 +150,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
                 <input
                   type="checkbox"
-                  className="toggle toggle-primary toggle-sm"
+                  className="toggle toggle-sm"
                   checked={notificationsEnabled}
                   onChange={(e) => setNotificationsEnabled(e.target.checked)}
                 />
@@ -168,7 +168,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
               <input
                 type="checkbox"
-                className="toggle toggle-primary toggle-sm"
+                className="toggle toggle-sm"
                 checked={autoStartMonitors}
                 onChange={(e) => setAutoStartMonitors(e.target.checked)}
               />
