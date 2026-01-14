@@ -114,7 +114,6 @@ export default function HomePage() {
   const handleExecute = async (buttonId: string) => {
     try {
       setButtonStatuses(prev => ({ ...prev, [buttonId]: 'running' }));
-      togglePanel(true);
       await executeScript(buttonId);
       setTimeout(() => {
         setButtonStatuses(prev => ({ ...prev, [buttonId]: 'success' }));
