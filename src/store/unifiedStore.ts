@@ -114,9 +114,10 @@ export const useUnifiedStore = create<UnifiedState>((set, get) => ({
   fetchAllItems: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Fetch items from backend (folder_id: undefined means get root items)
+      // Fetch ALL items from backend (folderId: "__all__" means get all items including those in folders)
+      // Note: Tauri converts camelCase to snake_case, so folderId becomes folder_id
       const backendItems = await invoke<any[]>('get_all_items', {
-        folder_id: undefined,
+        folderId: '__all__',
       });
 
       // Convert backend format to frontend format
@@ -208,10 +209,13 @@ export const useUnifiedStore = create<UnifiedState>((set, get) => ({
       const updatedItems = items.map((item) => {
         const update = updates.find((u) => u.id === item.id);
         if (update) {
+          // Update both the UnifiedItem fields and the nested data object
+          const updatedData = { ...item.data, folder_id: update.folder_id, position: update.position };
           return {
             ...item,
             position: update.position,
             folder_id: update.folder_id,
+            data: updatedData,
           };
         }
         return item;

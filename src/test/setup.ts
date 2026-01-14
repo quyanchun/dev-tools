@@ -1,8 +1,9 @@
 import '@testing-library/jest-dom';
 
 // Mock Tauri API
-global.window = global.window || ({} as any);
-global.window.__TAURI__ = {
+declare const global: typeof globalThis & { window: Window & { __TAURI__?: unknown } };
+(global as any).window = (global as any).window || ({} as any);
+(global as any).window.__TAURI__ = {
   invoke: async () => {},
   event: {
     listen: async () => () => {},

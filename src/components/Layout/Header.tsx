@@ -55,12 +55,6 @@ export default function Header() {
           首页
         </Link>
         <Link
-          to="/manage"
-          className={`btn btn-ghost btn-sm ${location.pathname === '/manage' ? 'btn-active' : ''}`}
-        >
-          管理
-        </Link>
-        <Link
           to="/settings"
           className={`btn btn-ghost btn-sm ${location.pathname === '/settings' ? 'btn-active' : ''}`}
         >

@@ -27,6 +27,7 @@ interface ButtonAreaProps {
   onDeleteFolder: (folder: Folder) => void;
   onEditMonitor: (monitor: Monitor) => void;
   onDeleteMonitor: (monitor: Monitor) => void;
+  onToggleMonitor?: (monitor: Monitor) => void;
 }
 
 export default function ButtonArea({
@@ -41,6 +42,7 @@ export default function ButtonArea({
   onDeleteFolder,
   onEditMonitor,
   onDeleteMonitor,
+  onToggleMonitor,
 }: ButtonAreaProps) {
   const { getItemsByContainer } = useUnifiedStore();
   const { activeItem, isRootOver } = useDragDrop();
@@ -193,6 +195,41 @@ export default function ButtonArea({
     if (contextMenu.type === 'monitor') {
       const monitor = contextMenu.target as Monitor;
       return [
+        {
+          label: monitor.is_active ? '停止' : '启动',
+          icon: monitor.is_active ? (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+              />
+            </svg>
+          ) : (
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ),
+          onClick: () => onToggleMonitor?.(monitor),
+        },
         {
           label: '编辑',
           icon: (

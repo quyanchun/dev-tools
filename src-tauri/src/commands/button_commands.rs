@@ -9,12 +9,20 @@ use super::DbConnection;
 // ============================================================================
 
 /// Get all items (monitors, folders, buttons) for a container, sorted by position
+/// If folder_id is None, returns root level items only
+/// If folder_id is Some("__all__"), returns ALL items including those in folders
 #[tauri::command]
 pub async fn get_all_items(
     folder_id: Option<String>,
     db: State<'_, DbConnection>,
 ) -> Result<Vec<UnifiedItem>, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
+
+    // Special case: if folder_id is "__all__", return all items
+    if folder_id.as_deref() == Some("__all__") {
+        return repository::get_all_items_all_containers(&conn)
+            .map_err(|e| format!("Failed to get all items: {}", e));
+    }
 
     repository::get_all_items_by_container(&conn, folder_id.as_deref())
         .map_err(|e| format!("Failed to get all items: {}", e))

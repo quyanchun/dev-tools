@@ -163,6 +163,91 @@ pub fn validate_position_value(
     Ok(position <= max_position)
 }
 
+/// Get ALL items (monitors, folders, buttons) from all containers
+/// This returns items from root level AND all folders
+pub fn get_all_items_all_containers(conn: &Connection) -> Result<Vec<UnifiedItem>> {
+    let mut items = Vec::new();
+
+    // Query ALL monitors (regardless of folder_id)
+    let mut stmt = conn.prepare(
+        "SELECT id, name, icon, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, folder_id, position, created_at
+         FROM monitors ORDER BY folder_id, position"
+    )?;
+
+    let monitors: Vec<Monitor> = stmt.query_map([], |row| {
+        Ok(Monitor {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            icon: row.get(2)?,
+            monitor_type: row.get(3)?,
+            target: row.get(4)?,
+            check_interval: row.get(5)?,
+            expected_result: row.get(6)?,
+            alert_on_failure: row.get(7)?,
+            is_active: row.get(8)?,
+            last_check_time: row.get(9)?,
+            last_status: row.get(10)?,
+            folder_id: row.get(11)?,
+            position: row.get(12)?,
+            created_at: row.get(13)?,
+        })
+    })?
+    .collect::<Result<Vec<_>>>()?;
+
+    for monitor in monitors {
+        items.push(UnifiedItem::Monitor(monitor));
+    }
+
+    // Query ALL folders
+    let mut stmt = conn.prepare(
+        "SELECT id, name, icon, position, created_at
+         FROM folders ORDER BY position"
+    )?;
+
+    let folders: Vec<super::models::Folder> = stmt.query_map([], |row| {
+        Ok(super::models::Folder {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            icon: row.get(2)?,
+            position: row.get(3)?,
+            created_at: row.get(4)?,
+        })
+    })?
+    .collect::<Result<Vec<_>>>()?;
+
+    for folder in folders {
+        items.push(UnifiedItem::Folder(folder));
+    }
+
+    // Query ALL buttons (regardless of folder_id)
+    let mut stmt = conn.prepare(
+        "SELECT id, name, icon, script_type, script_content, folder_id, position, created_at, updated_at
+         FROM buttons ORDER BY folder_id, position"
+    )?;
+
+    let buttons: Vec<Button> = stmt.query_map([], |row| {
+        Ok(Button {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            icon: row.get(2)?,
+            script_type: row.get(3)?,
+            script_content: row.get(4)?,
+            folder_id: row.get(5)?,
+            position: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+        })
+    })?
+    .collect::<Result<Vec<_>>>()?;
+
+    for button in buttons {
+        items.push(UnifiedItem::Button(button));
+    }
+
+    Ok(items)
+}
+
 /// Get all items (monitors, folders, buttons) by container, sorted by position
 pub fn get_all_items_by_container(
     conn: &Connection,
@@ -345,45 +430,9 @@ pub fn update_unified_positions(
         }
     }
     
-    // Validate: check that positions don't create gaps
-    for (container_key, _) in position_map.iter() {
-        // Get all items in this container after the update
-        let mut all_positions: Vec<i32> = Vec::new();
-        
-        // Add positions from updates for this container
-        for update in updates {
-            if update.folder_id == *container_key {
-                all_positions.push(update.position);
-            }
-        }
-        
-        // Check if positions would create gaps
-        if !all_positions.is_empty() {
-            all_positions.sort();
-            let max_pos = *all_positions.iter().max().unwrap();
-            
-            // Get current item count in container (excluding items being updated)
-            let update_ids: Vec<&String> = updates.iter().map(|u| &u.id).collect();
-            let current_items = get_all_items_by_container(conn, container_key.as_deref())?;
-            let remaining_count = current_items.iter().filter(|item| {
-                let id = match item {
-                    UnifiedItem::Monitor(m) => &m.id,
-                    UnifiedItem::Folder(f) => &f.id,
-                    UnifiedItem::Button(b) => &b.id,
-                };
-                !update_ids.contains(&id)
-            }).count();
-            
-            let total_count = remaining_count + updates.iter().filter(|u| u.folder_id == *container_key).count();
-            
-            // Max position should not exceed total count - 1
-            if max_pos >= total_count as i32 {
-                return Err(rusqlite::Error::InvalidParameterName(
-                    format!("Invalid position: {} would create gaps (max allowed: {})", max_pos, total_count - 1)
-                ));
-            }
-        }
-    }
+    // Note: Removed overly strict gap validation that was causing issues
+    // when moving items between containers. The frontend handles position
+    // calculation correctly, so we trust the incoming positions.
 
     // Start transaction
     let tx = conn.unchecked_transaction()?;

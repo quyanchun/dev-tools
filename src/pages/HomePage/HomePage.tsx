@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLauncherStore } from '../../store/launcherStore';
 import { useMonitorStore } from '../../store/monitorStore';
 import { useUnifiedStore } from '../../store/unifiedStore';
@@ -12,6 +11,8 @@ import {
   deleteButton,
   deleteFolder,
   deleteMonitor,
+  startMonitor,
+  stopMonitor,
 } from '../../api/tauri';
 import type { Monitor, Button, Folder } from '../../types';
 import LogPanel from './components/LogPanel';
@@ -22,10 +23,10 @@ import CreateFolderModal from './components/CreateFolderModal';
 import EditFolderModal from './components/EditFolderModal';
 import ConfirmModal from './components/ConfirmModal';
 import DragDropWrapper from './components/DragDropWrapper';
+import { ButtonModal, MonitorModal } from './components';
 import { ContextMenu } from '../../components/ContextMenu';
 
 export default function HomePage() {
-  const navigate = useNavigate();
   const { buttons, setButtons } = useLauncherStore();
   const { monitors, updateMonitorStatus } = useMonitorStore();
   const { fetchAllItems, getItemsByContainer } = useUnifiedStore();
@@ -43,6 +44,12 @@ export default function HomePage() {
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const [deletingMonitor, setDeletingMonitor] = useState<Monitor | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // 按钮和监控模态框状态
+  const [isButtonModalOpen, setIsButtonModalOpen] = useState(false);
+  const [isMonitorModalOpen, setIsMonitorModalOpen] = useState(false);
+  const [editingButton, setEditingButton] = useState<Button | null>(null);
+  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
   
   // 全局右键菜单状态
   const [globalContextMenu, setGlobalContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -166,6 +173,43 @@ export default function HomePage() {
     }
   };
 
+  // 切换监控启动/停止状态
+  const handleToggleMonitor = async (monitor: Monitor) => {
+    try {
+      if (monitor.is_active) {
+        await stopMonitor(monitor.id);
+        addLog({
+          id: crypto.randomUUID(),
+          button_id: null,
+          monitor_id: monitor.id,
+          level: 'info',
+          message: `监控 "${monitor.name}" 已停止`,
+          timestamp: Math.floor(Date.now() / 1000),
+        });
+      } else {
+        await startMonitor(monitor.id);
+        addLog({
+          id: crypto.randomUUID(),
+          button_id: null,
+          monitor_id: monitor.id,
+          level: 'info',
+          message: `监控 "${monitor.name}" 已启动`,
+          timestamp: Math.floor(Date.now() / 1000),
+        });
+      }
+      await loadData(); // 刷新以获取更新后的状态
+    } catch (error) {
+      addLog({
+        id: crypto.randomUUID(),
+        button_id: null,
+        monitor_id: monitor.id,
+        level: 'error',
+        message: `${monitor.is_active ? '停止' : '启动'}监控失败: ${error}`,
+        timestamp: Math.floor(Date.now() / 1000),
+      });
+    }
+  };
+
   // 从统一存储获取根级别项目并按位置排序
   const rootItems = getItemsByContainer(null);
   const hasContent = rootItems.length > 0;
@@ -184,6 +228,34 @@ export default function HomePage() {
 
   // 全局右键菜单项
   const globalMenuItems = [
+    {
+      label: '新增监控',
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
+        </svg>
+      ),
+      onClick: () => setIsMonitorModalOpen(true),
+    },
+    {
+      label: '新增按钮',
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+          />
+        </svg>
+      ),
+      onClick: () => setIsButtonModalOpen(true),
+    },
     {
       label: '新建文件夹',
       icon: (
@@ -234,7 +306,7 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
               <p className="text-lg mb-2">暂无内容</p>
-              <p className="text-sm">前往"管理"页面创建按钮或监控，右键空白处新建文件夹</p>
+              <p className="text-sm">右键空白处可创建按钮、监控或文件夹</p>
             </div>
           ) : (
             <DragDropWrapper>
@@ -245,12 +317,19 @@ export default function HomePage() {
                 monitors={monitors}
                 onShowMonitorDetails={setSelectedMonitor}
                 onCreateFolder={() => setIsCreateFolderModalOpen(true)}
-                onEditButton={(btn) => navigate(`/manage?edit=${btn.id}`)}
+                onEditButton={(btn) => {
+                  setEditingButton(btn);
+                  setIsButtonModalOpen(true);
+                }}
                 onDeleteButton={setDeletingButton}
                 onEditFolder={setEditingFolder}
                 onDeleteFolder={setDeletingFolder}
-                onEditMonitor={(monitor) => navigate(`/manage?editMonitor=${monitor.id}`)}
+                onEditMonitor={(monitor) => {
+                  setEditingMonitor(monitor);
+                  setIsMonitorModalOpen(true);
+                }}
                 onDeleteMonitor={setDeletingMonitor}
+                onToggleMonitor={handleToggleMonitor}
               />
             </DragDropWrapper>
           )}
@@ -310,6 +389,48 @@ export default function HomePage() {
         isLoading={isDeleting}
         onConfirm={handleDeleteMonitor}
         onCancel={() => setDeletingMonitor(null)}
+      />
+
+      {/* 按钮创建/编辑模态框 */}
+      <ButtonModal
+        isOpen={isButtonModalOpen}
+        button={editingButton}
+        onClose={() => {
+          setIsButtonModalOpen(false);
+          setEditingButton(null);
+        }}
+        onSuccess={() => {
+          loadData();
+          addLog({
+            id: crypto.randomUUID(),
+            button_id: null,
+            monitor_id: null,
+            level: 'info',
+            message: editingButton ? '按钮更新成功' : '按钮创建成功',
+            timestamp: Math.floor(Date.now() / 1000),
+          });
+        }}
+      />
+
+      {/* 监控创建/编辑模态框 */}
+      <MonitorModal
+        isOpen={isMonitorModalOpen}
+        monitor={editingMonitor}
+        onClose={() => {
+          setIsMonitorModalOpen(false);
+          setEditingMonitor(null);
+        }}
+        onSuccess={() => {
+          loadData();
+          addLog({
+            id: crypto.randomUUID(),
+            button_id: null,
+            monitor_id: null,
+            level: 'info',
+            message: editingMonitor ? '监控更新成功' : '监控创建成功',
+            timestamp: Math.floor(Date.now() / 1000),
+          });
+        }}
       />
 
       {/* 全局右键菜单 */}
