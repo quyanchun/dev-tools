@@ -25,3 +25,8 @@ pub fn test_db_connection(db: State<DbConnection>) -> Result<String, String> {
 
     Ok(format!("数据库连接成功！当前有 {} 个按钮", count))
 }
+
+#[tauri::command]
+pub fn exit_app(app_handle: tauri::AppHandle) {
+    app_handle.exit(0);
+}

@@ -25,6 +25,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::test_db_connection,
+            commands::exit_app,
             // Unified item commands
             commands::get_all_items,
             commands::update_unified_positions,
