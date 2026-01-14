@@ -11,6 +11,7 @@ import {
   listenToMonitorAlert,
   deleteButton,
   deleteFolder,
+  deleteMonitor,
 } from '../../api/tauri';
 import type { Monitor, Button, Folder } from '../../types';
 import LogPanel from './components/LogPanel';
@@ -21,6 +22,7 @@ import CreateFolderModal from './components/CreateFolderModal';
 import EditFolderModal from './components/EditFolderModal';
 import ConfirmModal from './components/ConfirmModal';
 import DragDropWrapper from './components/DragDropWrapper';
+import { ContextMenu } from '../../components/ContextMenu';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -39,7 +41,11 @@ export default function HomePage() {
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [deletingButton, setDeletingButton] = useState<Button | null>(null);
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
+  const [deletingMonitor, setDeletingMonitor] = useState<Monitor | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // 全局右键菜单状态
+  const [globalContextMenu, setGlobalContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   // 初始化加载 - 使用统一存储
   useEffect(() => {
@@ -145,12 +151,71 @@ export default function HomePage() {
     }
   };
 
+  const handleDeleteMonitor = async () => {
+    if (!deletingMonitor) return;
+    setIsDeleting(true);
+    try {
+      await deleteMonitor(deletingMonitor.id);
+      await loadData(); // 重新加载以更新统一存储
+      addLog({ id: crypto.randomUUID(), button_id: null, monitor_id: null, level: 'info', message: `监控 "${deletingMonitor.name}" 已删除`, timestamp: Math.floor(Date.now() / 1000) });
+    } catch (error) {
+      addLog({ id: crypto.randomUUID(), button_id: null, monitor_id: null, level: 'error', message: `删除失败: ${error}`, timestamp: Math.floor(Date.now() / 1000) });
+    } finally {
+      setIsDeleting(false);
+      setDeletingMonitor(null);
+    }
+  };
+
   // 从统一存储获取根级别项目并按位置排序
   const rootItems = getItemsByContainer(null);
   const hasContent = rootItems.length > 0;
 
+  // 全局右键菜单处理 - 在空白区域显示新建文件夹选项
+  const handleGlobalContextMenu = (e: React.MouseEvent) => {
+    // 如果点击的是某个项目（按钮、文件夹、监控），不处理
+    if ((e.target as HTMLElement).closest('[data-context-item]')) {
+      return;
+    }
+    // 阻止默认右键菜单
+    e.preventDefault();
+    // 显示右键菜单
+    setGlobalContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  // 全局右键菜单项
+  const globalMenuItems = [
+    {
+      label: '新建文件夹',
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+          />
+        </svg>
+      ),
+      onClick: () => setIsCreateFolderModalOpen(true),
+    },
+    {
+      label: '刷新',
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+      ),
+      onClick: () => loadData(),
+    },
+  ];
+
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col relative" onContextMenu={handleGlobalContextMenu}>
       <div className="flex-1 overflow-auto">
         <div className="p-6 max-w-[1920px] mx-auto">
           {/* 搜索栏居中 */}
@@ -184,6 +249,8 @@ export default function HomePage() {
                 onDeleteButton={setDeletingButton}
                 onEditFolder={setEditingFolder}
                 onDeleteFolder={setDeletingFolder}
+                onEditMonitor={(monitor) => navigate(`/manage?editMonitor=${monitor.id}`)}
+                onDeleteMonitor={setDeletingMonitor}
               />
             </DragDropWrapper>
           )}
@@ -233,6 +300,27 @@ export default function HomePage() {
         onConfirm={handleDeleteFolder}
         onCancel={() => setDeletingFolder(null)}
       />
+
+      <ConfirmModal
+        isOpen={!!deletingMonitor}
+        title="删除监控"
+        message={`确定要删除监控 "${deletingMonitor?.name}" 吗？`}
+        confirmText="删除"
+        danger
+        isLoading={isDeleting}
+        onConfirm={handleDeleteMonitor}
+        onCancel={() => setDeletingMonitor(null)}
+      />
+
+      {/* 全局右键菜单 */}
+      {globalContextMenu && (
+        <ContextMenu
+          x={globalContextMenu.x}
+          y={globalContextMenu.y}
+          items={globalMenuItems}
+          onClose={() => setGlobalContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
