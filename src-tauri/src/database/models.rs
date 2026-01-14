@@ -1,5 +1,34 @@
 use serde::{Deserialize, Serialize};
 
+// ============================================================================
+// Unified Item Types
+// ============================================================================
+
+/// Unified item enum that can represent any item type (Monitor, Folder, or Button)
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "item_type")]
+pub enum UnifiedItem {
+    #[serde(rename = "monitor")]
+    Monitor(Monitor),
+    #[serde(rename = "folder")]
+    Folder(Folder),
+    #[serde(rename = "button")]
+    Button(Button),
+}
+
+/// Structure for batch position updates across all item types
+#[derive(Debug, Deserialize)]
+pub struct UnifiedPositionUpdate {
+    pub id: String,
+    pub item_type: String, // "monitor", "folder", or "button"
+    pub position: i32,
+    pub folder_id: Option<String>,
+}
+
+// ============================================================================
+// Individual Item Types
+// ============================================================================
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Button {
     pub id: String,

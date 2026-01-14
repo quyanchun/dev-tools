@@ -1,15 +1,40 @@
 use tauri::State;
 
-use crate::database::models::{Button, Folder};
+use crate::database::models::{Button, Folder, UnifiedItem, UnifiedPositionUpdate};
 use crate::database::repository;
 use super::DbConnection;
-use serde::Deserialize;
 
-#[derive(Deserialize)]
-pub struct PositionUpdate {
-    pub id: String,
-    pub position: i32,
+// ============================================================================
+// Unified Item Commands
+// ============================================================================
+
+/// Get all items (monitors, folders, buttons) for a container, sorted by position
+#[tauri::command]
+pub async fn get_all_items(
+    folder_id: Option<String>,
+    db: State<'_, DbConnection>,
+) -> Result<Vec<UnifiedItem>, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+
+    repository::get_all_items_by_container(&conn, folder_id.as_deref())
+        .map_err(|e| format!("Failed to get all items: {}", e))
 }
+
+/// Update positions for multiple items across all types in a single transaction
+#[tauri::command]
+pub async fn update_unified_positions(
+    updates: Vec<UnifiedPositionUpdate>,
+    db: State<'_, DbConnection>,
+) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+
+    repository::update_unified_positions(&conn, &updates)
+        .map_err(|e| format!("Failed to update unified positions: {}", e))
+}
+
+// ============================================================================
+// Button Commands
+// ============================================================================
 
 /// Create a new button
 #[tauri::command]
@@ -83,56 +108,9 @@ pub async fn get_buttons_by_folder(
         .map_err(|e| format!("Failed to get buttons by folder: {}", e))
 }
 
-/// Update multiple button positions at once
-#[tauri::command]
-pub async fn update_button_positions(
-    updates: Vec<PositionUpdate>,
-    db: State<'_, DbConnection>,
-) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| e.to_string())?;
-
-    let updates_vec: Vec<(String, i32)> = updates
-        .into_iter()
-        .map(|u| (u.id, u.position))
-        .collect();
-
-    repository::update_button_positions(&conn, &updates_vec)
-        .map_err(|e| format!("Failed to update button positions: {}", e))
-}
-
-/// Update multiple monitor positions at once
-#[tauri::command]
-pub async fn update_monitor_positions(
-    updates: Vec<PositionUpdate>,
-    db: State<'_, DbConnection>,
-) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| e.to_string())?;
-
-    let updates_vec: Vec<(String, i32)> = updates
-        .into_iter()
-        .map(|u| (u.id, u.position))
-        .collect();
-
-    repository::update_monitor_positions(&conn, &updates_vec)
-        .map_err(|e| format!("Failed to update monitor positions: {}", e))
-}
-
-/// Update multiple folder positions at once
-#[tauri::command]
-pub async fn update_folder_positions(
-    updates: Vec<PositionUpdate>,
-    db: State<'_, DbConnection>,
-) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| e.to_string())?;
-
-    let updates_vec: Vec<(String, i32)> = updates
-        .into_iter()
-        .map(|u| (u.id, u.position))
-        .collect();
-
-    repository::update_folder_positions(&conn, &updates_vec)
-        .map_err(|e| format!("Failed to update folder positions: {}", e))
-}
+// Note: Old type-specific position update commands (update_button_positions,
+// update_monitor_positions, update_folder_positions) have been removed.
+// Use update_unified_positions() instead for all position updates.
 
 // ============================================================================
 // Folder Commands

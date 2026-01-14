@@ -1,6 +1,24 @@
 import { create } from 'zustand';
 import { Button, Folder } from '../types';
 
+/**
+ * @deprecated This store is maintained for backward compatibility with CRUD operations.
+ * For positioning and ordering operations, use the unified store (unifiedStore.ts) instead.
+ * 
+ * The unified store provides:
+ * - Unified positioning across all item types (monitors, folders, buttons)
+ * - Consistent drag-and-drop reordering
+ * - Atomic position updates
+ * 
+ * This store should only be used for:
+ * - Simple CRUD operations (add, update, delete)
+ * - Accessing button/folder data without position concerns
+ * 
+ * Migration guide:
+ * - For reordering: Use unifiedStore.reorderItems()
+ * - For fetching items: Use unifiedStore.getItemsByContainer()
+ * - For position updates: Use unifiedStore.reorderItems()
+ */
 interface LauncherState {
   buttons: Button[];
   folders: Folder[];
@@ -9,6 +27,7 @@ interface LauncherState {
   addButton: (button: Button) => void;
   updateButton: (id: string, button: Partial<Button>) => void;
   deleteButton: (id: string) => void;
+  /** @deprecated Use unifiedStore.reorderItems() instead */
   reorderButtons: (newOrder: Button[]) => void;
   addFolder: (folder: Folder) => void;
   updateFolder: (id: string, folder: Partial<Folder>) => void;

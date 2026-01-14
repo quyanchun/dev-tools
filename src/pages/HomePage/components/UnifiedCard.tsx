@@ -1,99 +1,111 @@
-import type { Button, Monitor } from '../../../types';
-
-type CardItem = 
-  | { type: 'button'; data: Button }
-  | { type: 'monitor'; data: Monitor };
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import MonitorCard from './MonitorCard';
+import FolderCard from './FolderCard';
+import ButtonCard from './ButtonCard';
+import type { UnifiedItem } from '../../../store/unifiedStore';
+import type { Monitor, Folder, Button } from '../../../types';
 
 interface UnifiedCardProps {
-  item: CardItem;
-  status?: 'idle' | 'running' | 'success' | 'error';
-  onExecute?: (id: string) => void;
-  onShowDetails?: (monitor: Monitor) => void;
+  item: UnifiedItem;
+  // Props for ButtonCard
+  onExecute?: (button_id: string) => void;
+  buttonStatus?: 'idle' | 'running' | 'success' | 'error';
+  // Props for MonitorCard
+  onShowMonitorDetails?: (monitor: Monitor) => void;
+  // Props for FolderCard
+  folderButtons?: Button[];
+  folderMonitors?: Monitor[];
+  buttonStatuses?: Record<string, 'idle' | 'running' | 'success' | 'error'>;
+  onButtonContextMenu?: (e: React.MouseEvent, button: Button) => void;
+  // Context menu for all items
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export default function UnifiedCard({ item, status = 'idle', onExecute, onShowDetails }: UnifiedCardProps) {
-  if (item.type === 'button') {
-    return (
-      <ButtonCardContent 
-        button={item.data} 
-        status={status} 
-        onExecute={onExecute} 
-      />
-    );
-  }
-  
-  return (
-    <MonitorCardContent 
-      monitor={item.data} 
-      onShowDetails={onShowDetails} 
-    />
-  );
-}
+export default function UnifiedCard({
+  item,
+  onExecute,
+  buttonStatus = 'idle',
+  onShowMonitorDetails,
+  folderButtons = [],
+  folderMonitors = [],
+  buttonStatuses = {},
+  onButtonContextMenu,
+  onContextMenu,
+}: UnifiedCardProps) {
+  // Use useSortable hook for drag and drop support
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `${item.type}-${item.id}`,
+    data: {
+      type: item.type,
+      item: item.data,
+    },
+  });
 
-// 按钮卡片内容
-function ButtonCardContent({ 
-  button, 
-  status, 
-  onExecute 
-}: { 
-  button: Button; 
-  status: 'idle' | 'running' | 'success' | 'error';
-  onExecute?: (id: string) => void;
-}) {
-  return (
-    <div
-      className="glass-card launchpad-button"
-      onClick={() => status !== 'running' && onExecute?.(button.id)}
-    >
-      <div className={`text-6xl ${status === 'running' ? 'animate-pulse' : ''}`}>
-        {button.icon || '📦'}
-      </div>
-      <h3 className="font-medium text-xs line-clamp-2 text-center w-full px-1">
-        {button.name}
-      </h3>
-    </div>
-  );
-}
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
+  };
 
-// 监控卡片内容
-function MonitorCardContent({ 
-  monitor, 
-  onShowDetails 
-}: { 
-  monitor: Monitor;
-  onShowDetails?: (monitor: Monitor) => void;
-}) {
-  const getStatusDisplay = () => {
-    switch (monitor.last_status) {
-      case 'running':
-        return { color: 'bg-success', text: '运行中', animate: 'animate-pulse' };
-      case 'error':
-        return { color: 'bg-error', text: '异常', animate: 'animate-blink' };
-      case 'checking':
-        return { color: 'bg-warning', text: '检查中', animate: 'animate-pulse' };
+  // Render the appropriate card based on item type
+  const renderCard = () => {
+    switch (item.type) {
+      case 'monitor':
+        return (
+          <MonitorCard
+            monitor={item.data as Monitor}
+            onShowDetails={onShowMonitorDetails || (() => {})}
+          />
+        );
+
+      case 'folder':
+        return (
+          <FolderCard
+            folder={item.data as Folder}
+            buttons={folderButtons}
+            monitors={folderMonitors}
+            onExecute={onExecute || (() => {})}
+            buttonStatuses={buttonStatuses}
+            onContextMenu={onContextMenu}
+            onButtonContextMenu={onButtonContextMenu}
+            onShowMonitorDetails={onShowMonitorDetails}
+          />
+        );
+
+      case 'button':
+        return (
+          <ButtonCard
+            button={item.data as Button}
+            onExecute={onExecute || (() => {})}
+            status={buttonStatus}
+          />
+        );
+
       default:
-        return { color: 'bg-info', text: '活动', animate: '' };
+        return null;
     }
   };
 
-  const status = getStatusDisplay();
-
   return (
     <div
-      className="glass-card launchpad-button relative"
-      onClick={() => onShowDetails?.(monitor)}
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={isDragging ? 'z-50' : ''}
+      data-context-item={item.type}
+      onContextMenu={onContextMenu}
     >
-      {/* 状态指示器 */}
-      <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${status.color} ${status.animate}`} />
-      
-      <div className="text-5xl">
-        {monitor.icon || (monitor.monitor_type === 'api' ? '🌐' : '📊')}
-      </div>
-      <h3 className="font-medium text-xs line-clamp-2 text-center w-full px-1">
-        {monitor.name}
-      </h3>
+      {renderCard()}
     </div>
   );
 }
-
-export type { CardItem };

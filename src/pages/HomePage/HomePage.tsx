@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLauncherStore } from '../../store/launcherStore';
 import { useMonitorStore } from '../../store/monitorStore';
+import { useUnifiedStore } from '../../store/unifiedStore';
 import { useLogStore } from '../../store/logStore';
 import { 
-  getAllButtons, 
-  getAllFolders, 
   executeScript, 
   listenToLogs, 
   listenToMonitorStatus, 
@@ -25,8 +24,9 @@ import DragDropWrapper from './components/DragDropWrapper';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { buttons, folders, setButtons, setFolders } = useLauncherStore();
-  const { monitors, fetchMonitors, updateMonitorStatus } = useMonitorStore();
+  const { buttons, setButtons } = useLauncherStore();
+  const { monitors, updateMonitorStatus } = useMonitorStore();
+  const { fetchAllItems, getItemsByContainer } = useUnifiedStore();
   const { addLog, togglePanel } = useLogStore();
   
   const [buttonStatuses, setButtonStatuses] = useState<Record<string, 'idle' | 'running' | 'success' | 'error'>>({});
@@ -41,7 +41,7 @@ export default function HomePage() {
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 初始化加载
+  // 初始化加载 - 使用统一存储
   useEffect(() => {
     loadData();
   }, []);
@@ -49,16 +49,12 @@ export default function HomePage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [buttonsData, foldersData] = await Promise.all([
-        getAllButtons(),
-        getAllFolders(),
-        fetchMonitors(),
-      ]);
-      setButtons(buttonsData);
-      setFolders(foldersData);
+      // 使用统一存储获取所有项目
+      await fetchAllItems();
       
+      // 初始化按钮状态
       const statuses: Record<string, 'idle' | 'running' | 'success' | 'error'> = {};
-      buttonsData.forEach(btn => { statuses[btn.id] = 'idle'; });
+      buttons.forEach(btn => { statuses[btn.id] = 'idle'; });
       setButtonStatuses(statuses);
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -139,7 +135,7 @@ export default function HomePage() {
     setIsDeleting(true);
     try {
       await deleteFolder(deletingFolder.id);
-      await loadData();
+      await loadData(); // 重新加载以更新统一存储
       addLog({ id: crypto.randomUUID(), button_id: null, monitor_id: null, level: 'info', message: `文件夹 "${deletingFolder.name}" 已删除`, timestamp: Math.floor(Date.now() / 1000) });
     } catch (error) {
       addLog({ id: crypto.randomUUID(), button_id: null, monitor_id: null, level: 'error', message: `删除失败: ${error}`, timestamp: Math.floor(Date.now() / 1000) });
@@ -149,7 +145,9 @@ export default function HomePage() {
     }
   };
 
-  const hasContent = buttons.length > 0 || folders.length > 0 || monitors.some(m => m.is_active);
+  // 从统一存储获取根级别项目并按位置排序
+  const rootItems = getItemsByContainer(null);
+  const hasContent = rootItems.length > 0;
 
   return (
     <div className="h-full flex flex-col relative">
@@ -174,13 +172,7 @@ export default function HomePage() {
               <p className="text-sm">前往"管理"页面创建按钮或监控，右键空白处新建文件夹</p>
             </div>
           ) : (
-            <DragDropWrapper 
-              monitors={monitors} 
-              onMonitorsChange={(updatedMonitors) => {
-                // 直接更新整个 monitors 数组
-                useMonitorStore.getState().setMonitors(updatedMonitors);
-              }}
-            >
+            <DragDropWrapper>
               <ButtonArea
                 onExecute={handleExecute}
                 buttonStatuses={buttonStatuses}

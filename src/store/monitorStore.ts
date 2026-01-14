@@ -2,6 +2,26 @@ import { create } from 'zustand';
 import { Monitor } from '../types';
 import * as tauriApi from '../api/tauri';
 
+/**
+ * @deprecated This store is maintained for backward compatibility with monitor-specific operations.
+ * For positioning and ordering operations, use the unified store (unifiedStore.ts) instead.
+ * 
+ * The unified store provides:
+ * - Unified positioning across all item types (monitors, folders, buttons)
+ * - Consistent drag-and-drop reordering
+ * - Atomic position updates
+ * 
+ * This store should only be used for:
+ * - Monitor-specific CRUD operations (create, update, delete)
+ * - Monitor control operations (start, stop)
+ * - Monitor status updates from event listeners
+ * - Accessing monitor data without position concerns
+ * 
+ * Migration guide:
+ * - For reordering: Use unifiedStore.reorderItems()
+ * - For fetching items: Use unifiedStore.getItemsByContainer()
+ * - For position updates: Use unifiedStore.reorderItems()
+ */
 interface MonitorState {
   monitors: Monitor[];
   isLoading: boolean;

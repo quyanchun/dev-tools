@@ -3,6 +3,7 @@ use tauri::Manager;
 
 pub mod models;
 pub mod repository;
+pub mod migration;
 
 pub fn init_database(app_handle: &tauri::AppHandle) -> Result<Connection> {
     let app_dir = app_handle
@@ -13,9 +14,12 @@ pub fn init_database(app_handle: &tauri::AppHandle) -> Result<Connection> {
     std::fs::create_dir_all(&app_dir).expect("Failed to create app data directory");
 
     let db_path = app_dir.join("devtools.db");
-    let conn = Connection::open(db_path)?;
+    let mut conn = Connection::open(db_path)?;
 
     create_tables(&conn)?;
+    
+    // Run migration to unified positions
+    migration::migrate_to_unified_positions(&mut conn)?;
 
     Ok(conn)
 }

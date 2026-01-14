@@ -3,6 +3,34 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { Button, LogEntry, Monitor, Folder } from '../types';
 
 // ============================================================================
+// Unified Item Types
+// ============================================================================
+
+export type UnifiedItem =
+  | { item_type: 'monitor'; monitor: Monitor }
+  | { item_type: 'folder'; folder: Folder }
+  | { item_type: 'button'; button: Button };
+
+export interface UnifiedPositionUpdate {
+  id: string;
+  item_type: 'monitor' | 'folder' | 'button';
+  position: number;
+  folder_id: string | null;
+}
+
+// ============================================================================
+// Unified Item APIs
+// ============================================================================
+
+export async function getUnifiedItems(): Promise<UnifiedItem[]> {
+  return await invoke('get_all_items');
+}
+
+export async function updateUnifiedPositions(updates: UnifiedPositionUpdate[]): Promise<void> {
+  return await invoke('update_unified_positions', { updates });
+}
+
+// ============================================================================
 // Test API
 // ============================================================================
 
@@ -38,22 +66,9 @@ export async function getButtonsByFolder(folder_id: string | null): Promise<Butt
   return await invoke('get_buttons_by_folder', { folderId: folder_id });
 }
 
-export interface PositionUpdate {
-  id: string;
-  position: number;
-}
-
-export async function updateButtonPositions(updates: PositionUpdate[]): Promise<void> {
-  return await invoke('update_button_positions', { updates });
-}
-
-export async function updateMonitorPositions(updates: PositionUpdate[]): Promise<void> {
-  return await invoke('update_monitor_positions', { updates });
-}
-
-export async function updateFolderPositions(updates: PositionUpdate[]): Promise<void> {
-  return await invoke('update_folder_positions', { updates });
-}
+// Note: Old type-specific position update functions (updateButtonPositions,
+// updateMonitorPositions, updateFolderPositions) have been removed.
+// Use updateUnifiedPositions() instead for all position updates.
 
 // ============================================================================
 // Folder APIs

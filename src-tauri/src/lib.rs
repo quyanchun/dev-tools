@@ -25,6 +25,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::test_db_connection,
+            // Unified item commands
+            commands::get_all_items,
+            commands::update_unified_positions,
             // Button commands
             commands::create_button,
             commands::get_all_buttons,
@@ -32,14 +35,12 @@ pub fn run() {
             commands::update_button,
             commands::delete_button,
             commands::get_buttons_by_folder,
-            commands::update_button_positions,
             // Folder commands
             commands::create_folder,
             commands::get_all_folders,
             commands::get_folder,
             commands::update_folder,
             commands::delete_folder,
-            commands::update_folder_positions,
             // Log commands
             commands::get_logs,
             commands::get_logs_by_button,
@@ -55,7 +56,6 @@ pub fn run() {
             commands::start_monitor,
             commands::stop_monitor,
             commands::get_monitor_logs,
-            commands::update_monitor_positions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
