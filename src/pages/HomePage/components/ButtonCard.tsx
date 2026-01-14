@@ -25,18 +25,22 @@ export default function ButtonCard({ button, onExecute, status }: ButtonCardProp
 
   return (
     <div
-      className={`glass-card launchpad-button ${statusClass}`}
+      className={`glass-card cursor-pointer transition-all duration-300 w-[120px] h-[120px] hover:scale-105 ${statusClass}`}
       onClick={() => status !== 'running' && onExecute(button.id)}
     >
-      {/* 图标 - macOS Launchpad 尺寸 */}
-      <div className={`text-6xl ${status === 'running' ? 'animate-pulse' : ''}`}>
-        {button.icon || '📦'}
-      </div>
+      <div className="relative h-full p-3 flex flex-col">
+        {/* 图标区域 */}
+        <div className={`flex-1 flex items-center justify-center text-5xl mb-2 ${status === 'running' ? 'animate-pulse' : ''}`}>
+          {button.icon || '📦'}
+        </div>
 
-      {/* 名称 - 简洁显示 */}
-      <h3 className="font-medium text-xs line-clamp-2 text-center w-full px-1">
-        {button.name}
-      </h3>
+        {/* 名称 - 底部固定，与文件夹对齐 */}
+        <div className="text-center h-4 flex items-center justify-center">
+          <h3 className="font-semibold text-xs truncate px-1 leading-none">
+            {button.name}
+          </h3>
+        </div>
+      </div>
     </div>
   );
 }

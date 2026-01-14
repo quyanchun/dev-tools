@@ -116,13 +116,10 @@ export default function FolderCard({
             </div>
 
             {/* 文件夹名称 */}
-            <div className="text-center">
-              <h3 className="font-semibold text-xs truncate px-1">
+            <div className="text-center h-4 flex items-center justify-center">
+              <h3 className="font-semibold text-xs truncate px-1 leading-none">
                 {folder.name}
               </h3>
-              <p className="text-[10px] text-base-content/60">
-                {totalItems} 项
-              </p>
             </div>
 
             {/* 更多指示器 */}
@@ -137,107 +134,181 @@ export default function FolderCard({
 
       {/* 展开的文件夹 - 优化尺寸 */}
       {isOpen && (
+        <FolderModal
+          folder={folder}
+          buttons={buttons}
+          monitors={monitors}
+          totalItems={totalItems}
+          allItemIds={allItemIds}
+          buttonStatuses={buttonStatuses}
+          onExecute={onExecute}
+          onClose={() => setIsOpen(false)}
+          onButtonContextMenu={onButtonContextMenu}
+          onShowMonitorDetails={onShowMonitorDetails}
+        />
+      )}
+    </>
+  );
+}
+
+
+// 文件夹模态框组件 - 支持四个方向拖出
+interface FolderModalProps {
+  folder: Folder;
+  buttons: Button[];
+  monitors: Monitor[];
+  totalItems: number;
+  allItemIds: string[];
+  buttonStatuses: Record<string, 'idle' | 'running' | 'success' | 'error'>;
+  onExecute: (id: string) => void;
+  onClose: () => void;
+  onButtonContextMenu?: (e: React.MouseEvent, button: Button) => void;
+  onShowMonitorDetails?: (monitor: Monitor) => void;
+}
+
+function FolderModal({
+  folder,
+  buttons,
+  monitors,
+  totalItems,
+  allItemIds,
+  buttonStatuses,
+  onExecute,
+  onClose,
+  onButtonContextMenu,
+  onShowMonitorDetails,
+}: FolderModalProps) {
+  // 四个边缘的 droppable 区域
+  const { setNodeRef: setTopRef } = useDroppable({
+    id: 'root-droppable',
+    data: { type: 'root', position: 'top' },
+  });
+  const { setNodeRef: setBottomRef } = useDroppable({
+    id: 'root-droppable-bottom',
+    data: { type: 'root', position: 'bottom' },
+  });
+  const { setNodeRef: setLeftRef } = useDroppable({
+    id: 'root-droppable-left',
+    data: { type: 'root', position: 'left' },
+  });
+  const { setNodeRef: setRightRef } = useDroppable({
+    id: 'root-droppable-right',
+    data: { type: 'root', position: 'right' },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 animate-fade-in"
+      style={{
+        background: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      {/* 顶部拖放区域 */}
+      <div ref={setTopRef} className="absolute top-0 left-0 right-0 h-[15vh]" onClick={onClose} />
+      {/* 底部拖放区域 */}
+      <div ref={setBottomRef} className="absolute bottom-0 left-0 right-0 h-[15vh]" onClick={onClose} />
+      {/* 左侧拖放区域 */}
+      <div ref={setLeftRef} className="absolute top-[15vh] bottom-[15vh] left-0 w-[15vw]" onClick={onClose} />
+      {/* 右侧拖放区域 */}
+      <div ref={setRightRef} className="absolute top-[15vh] bottom-[15vh] right-0 w-[15vw]" onClick={onClose} />
+
+      {/* 模态框内容 */}
+      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-          style={{
-            background: 'rgba(0, 0, 0, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)'
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsOpen(false);
-            }
-          }}
+          className="glass-modal w-[70vw] max-w-[1000px] h-[70vh] flex flex-col animate-scale-in relative pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="glass-modal w-[70vw] max-w-[1000px] h-[70vh] flex flex-col animate-scale-in relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 文件夹头部 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-base-300/50 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="text-4xl">{folder.icon || '📁'}</div>
-                <div>
-                  <h2 className="text-2xl font-bold">{folder.name}</h2>
-                  <p className="text-xs text-base-content/60 mt-0.5">
-                    {totalItems} 个项目
-                  </p>
-                </div>
+          {/* 文件夹头部 */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-base-300/50 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl">{folder.icon || '📁'}</div>
+              <div>
+                <h2 className="text-2xl font-bold">{folder.name}</h2>
+                <p className="text-xs text-base-content/60 mt-0.5">
+                  {totalItems} 个项目
+                </p>
               </div>
-              <button
-                className="btn btn-circle btn-ghost"
-                onClick={() => setIsOpen(false)}
+            </div>
+            <button
+              className="btn btn-circle btn-ghost"
+              onClick={onClose}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 文件夹内容 */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {totalItems > 0 ? (
+              <SortableContext
+                items={allItemIds}
+                strategy={rectSortingStrategy}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* 文件夹内容 */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {totalItems > 0 ? (
-                <SortableContext
-                  items={allItemIds}
-                  strategy={rectSortingStrategy}
-                >
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
-                    {/* 监控 */}
-                    {monitors.map((monitor) => (
-                      <DraggableMonitorCard
-                        key={monitor.id}
-                        monitor={monitor}
-                        onShowDetails={onShowMonitorDetails || (() => {})}
-                      />
-                    ))}
-                    {/* 按钮 */}
-                    {buttons.map((button) => (
-                      <DraggableButton
-                        key={button.id}
-                        button={button}
-                        onExecute={onExecute}
-                        status={buttonStatuses[button.id] || 'idle'}
-                        onContextMenu={onButtonContextMenu ? (e) => onButtonContextMenu(e, button) : undefined}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-base-content/50">
-                    <svg
-                      className="w-16 h-16 mx-auto mb-4 opacity-50"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                    <p className="text-base font-medium mb-1">文件夹为空</p>
-                    <p className="text-sm">拖拽按钮或监控到这里</p>
-                  </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
+                  {/* 监控 */}
+                  {monitors.map((monitor) => (
+                    <DraggableMonitorCard
+                      key={monitor.id}
+                      monitor={monitor}
+                      onShowDetails={onShowMonitorDetails || (() => {})}
+                    />
+                  ))}
+                  {/* 按钮 */}
+                  {buttons.map((button) => (
+                    <DraggableButton
+                      key={button.id}
+                      button={button}
+                      onExecute={onExecute}
+                      status={buttonStatuses[button.id] || 'idle'}
+                      onContextMenu={onButtonContextMenu ? (e) => onButtonContextMenu(e, button) : undefined}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-
-            {/* 底部提示 */}
-            <div className="px-6 py-3 border-t border-base-300/50 flex-shrink-0 bg-base-100/30">
-              <div className="flex items-center justify-center gap-2 text-xs text-base-content/60">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>拖拽项目到模态框外可移出文件夹</span>
+              </SortableContext>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-base-content/50">
+                  <svg
+                    className="w-16 h-16 mx-auto mb-4 opacity-50"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  <p className="text-base font-medium mb-1">文件夹为空</p>
+                  <p className="text-sm">拖拽按钮或监控到这里</p>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* 底部提示 */}
+          <div className="px-6 py-3 border-t border-base-300/50 flex-shrink-0 bg-base-100/30">
+            <div className="flex items-center justify-center gap-2 text-xs text-base-content/60">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>拖拽项目到模态框外可移出文件夹</span>
             </div>
           </div>
         </div>
-      )}
-    </>
+      </div>
+
+    </div>
   );
 }

@@ -112,7 +112,10 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
       }
 
       // 拖拽到根目录
-      if (over.id === 'root-droppable') {
+      if (over.id === 'root-droppable' || 
+          over.id === 'root-droppable-bottom' || 
+          over.id === 'root-droppable-left' || 
+          over.id === 'root-droppable-right') {
         if (draggedMonitor.folder_id !== null) {
           try {
             const updatedMonitor = { ...draggedMonitor, folder_id: null };
@@ -161,8 +164,11 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
       return;
     }
 
-    // 情况 2: 拖拽到根目录（root-droppable）
-    if (over.id === 'root-droppable') {
+    // 情况 2: 拖拽到根目录（root-droppable 或边缘区域）
+    if (over.id === 'root-droppable' || 
+        over.id === 'root-droppable-bottom' || 
+        over.id === 'root-droppable-left' || 
+        over.id === 'root-droppable-right') {
       if (activeButton.folder_id !== null) {
         try {
           await updateButton(activeButton.id, {
@@ -233,7 +239,7 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
         {/* 拖拽预览 */}
         <DragOverlay>
           {activeButton ? (
-            <div className="opacity-90 rotate-3 scale-105 shadow-2xl">
+            <div className="opacity-90 scale-105 shadow-2xl">
               <ButtonCard
                 button={activeButton}
                 onExecute={() => {}}
@@ -241,7 +247,7 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
               />
             </div>
           ) : activeMonitor ? (
-            <div className="opacity-90 rotate-3 scale-105 shadow-2xl">
+            <div className="opacity-90 scale-105 shadow-2xl">
               <MonitorCard
                 monitor={activeMonitor}
                 onShowDetails={() => {}}

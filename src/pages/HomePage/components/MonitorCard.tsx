@@ -80,24 +80,22 @@ export default function MonitorCard({ monitor, onShowDetails }: MonitorCardProps
       className="glass-card cursor-pointer hover:scale-105 transition-transform duration-200 w-[120px] h-[120px]"
       onClick={() => onShowDetails(monitor)}
     >
-      <div className="p-3 flex flex-col items-center justify-between h-full">
-        {/* 图标 */}
-        <div className="text-primary mb-1 scale-75">{getMonitorIcon()}</div>
-
-        {/* 名称和类型 */}
-        <div className="text-center flex-1 flex flex-col justify-center">
-          <h3 className="font-semibold text-xs truncate w-full mb-0.5" title={monitor.name}>
-            {monitor.name}
-          </h3>
-          <div className="text-[10px] text-base-content/60">
-            <div>{monitor.check_interval}s</div>
+      <div className="p-3 flex flex-col h-full">
+        {/* 图标区域 - 包含状态指示 */}
+        <div className="flex-1 flex flex-col items-center justify-center mb-2">
+          <div className="text-primary scale-75">{getMonitorIcon()}</div>
+          {/* 状态指示 */}
+          <div className={`flex items-center gap-1 text-[10px] mt-1 ${status.color}`}>
+            {status.icon}
+            <span>{status.text}</span>
           </div>
         </div>
 
-        {/* 状态指示 */}
-        <div className={`flex items-center gap-1.5 text-[10px] ${status.color}`}>
-          {status.icon}
-          <span>{status.text}</span>
+        {/* 名称 - 底部固定，与按钮和文件夹对齐 */}
+        <div className="text-center h-4 flex items-center justify-center">
+          <h3 className="font-semibold text-xs truncate px-1 leading-none" title={monitor.name}>
+            {monitor.name}
+          </h3>
         </div>
       </div>
     </div>
