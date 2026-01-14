@@ -100,6 +100,40 @@ pub async fn update_button_positions(
         .map_err(|e| format!("Failed to update button positions: {}", e))
 }
 
+/// Update multiple monitor positions at once
+#[tauri::command]
+pub async fn update_monitor_positions(
+    updates: Vec<PositionUpdate>,
+    db: State<'_, DbConnection>,
+) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+
+    let updates_vec: Vec<(String, i32)> = updates
+        .into_iter()
+        .map(|u| (u.id, u.position))
+        .collect();
+
+    repository::update_monitor_positions(&conn, &updates_vec)
+        .map_err(|e| format!("Failed to update monitor positions: {}", e))
+}
+
+/// Update multiple folder positions at once
+#[tauri::command]
+pub async fn update_folder_positions(
+    updates: Vec<PositionUpdate>,
+    db: State<'_, DbConnection>,
+) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+
+    let updates_vec: Vec<(String, i32)> = updates
+        .into_iter()
+        .map(|u| (u.id, u.position))
+        .collect();
+
+    repository::update_folder_positions(&conn, &updates_vec)
+        .map_err(|e| format!("Failed to update folder positions: {}", e))
+}
+
 // ============================================================================
 // Folder Commands
 // ============================================================================

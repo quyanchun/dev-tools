@@ -47,6 +47,14 @@ export async function updateButtonPositions(updates: PositionUpdate[]): Promise<
   return await invoke('update_button_positions', { updates });
 }
 
+export async function updateMonitorPositions(updates: PositionUpdate[]): Promise<void> {
+  return await invoke('update_monitor_positions', { updates });
+}
+
+export async function updateFolderPositions(updates: PositionUpdate[]): Promise<void> {
+  return await invoke('update_folder_positions', { updates });
+}
+
 // ============================================================================
 // Folder APIs
 // ============================================================================

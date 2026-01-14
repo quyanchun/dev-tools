@@ -39,6 +39,7 @@ pub fn run() {
             commands::get_folder,
             commands::update_folder,
             commands::delete_folder,
+            commands::update_folder_positions,
             // Log commands
             commands::get_logs,
             commands::get_logs_by_button,
@@ -54,6 +55,7 @@ pub fn run() {
             commands::start_monitor,
             commands::stop_monitor,
             commands::get_monitor_logs,
+            commands::update_monitor_positions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

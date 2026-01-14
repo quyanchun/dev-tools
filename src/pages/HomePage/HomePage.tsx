@@ -177,8 +177,8 @@ export default function HomePage() {
             <DragDropWrapper 
               monitors={monitors} 
               onMonitorsChange={(updatedMonitors) => {
-                // 更新 monitorStore
-                updatedMonitors.forEach(m => updateMonitorStatus(m.id, { folder_id: m.folder_id }));
+                // 直接更新整个 monitors 数组
+                useMonitorStore.getState().setMonitors(updatedMonitors);
               }}
             >
               <ButtonArea

@@ -407,6 +407,36 @@ pub fn update_button_positions(
     Ok(())
 }
 
+/// Batch update monitor positions
+pub fn update_monitor_positions(
+    conn: &Connection,
+    updates: &[(String, i32)], // (monitor_id, new_position)
+) -> Result<()> {
+    for (id, position) in updates {
+        conn.execute(
+            "UPDATE monitors SET position = ?1 WHERE id = ?2",
+            (position, id),
+        )?;
+    }
+
+    Ok(())
+}
+
+/// Batch update folder positions
+pub fn update_folder_positions(
+    conn: &Connection,
+    updates: &[(String, i32)], // (folder_id, new_position)
+) -> Result<()> {
+    for (id, position) in updates {
+        conn.execute(
+            "UPDATE folders SET position = ?1 WHERE id = ?2",
+            (position, id),
+        )?;
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // Folder Operations
 // ============================================================================

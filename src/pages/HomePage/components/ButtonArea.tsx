@@ -60,13 +60,13 @@ export default function ButtonArea({
     : folders;
 
   const rootButtons = filteredButtons.filter(b => !b.folder_id);
-  const rootMonitors = filteredMonitors.filter(m => !m.folder_id);
+  const rootMonitors = filteredMonitors.filter(m => !m.folder_id).sort((a, b) => a.position - b.position);
   
   const folderMap = filteredFolders.reduce((acc, folder) => {
     acc[folder.id] = {
       folder,
       buttons: filteredButtons.filter(b => b.folder_id === folder.id),
-      monitors: filteredMonitors.filter(m => m.folder_id === folder.id),
+      monitors: filteredMonitors.filter(m => m.folder_id === folder.id).sort((a, b) => a.position - b.position),
     };
     return acc;
   }, {} as Record<string, { folder: Folder; buttons: Button[]; monitors: Monitor[] }>);

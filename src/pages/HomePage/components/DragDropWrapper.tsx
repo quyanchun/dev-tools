@@ -16,21 +16,24 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { useLauncherStore } from '../../../store/launcherStore';
-import { updateButton, updateButtonPositions, updateMonitor } from '../../../api/tauri';
+import { updateButton, updateButtonPositions, updateMonitor, updateMonitorPositions, updateFolderPositions } from '../../../api/tauri';
 import { useLogStore } from '../../../store/logStore';
 import ButtonCard from './ButtonCard';
 import MonitorCard from './MonitorCard';
-import type { Button, Monitor } from '../../../types';
+import FolderCardPreview from './FolderCardPreview';
+import type { Button, Monitor, Folder } from '../../../types';
 
 interface DragDropContextType {
   activeButton: Button | null;
   activeMonitor: Monitor | null;
+  activeFolder: Folder | null;
   isRootOver: boolean;
 }
 
 const DragDropContext = createContext<DragDropContextType>({
   activeButton: null,
   activeMonitor: null,
+  activeFolder: null,
   isRootOver: false,
 });
 
@@ -43,10 +46,11 @@ interface DragDropWrapperProps {
 }
 
 export default function DragDropWrapper({ children, monitors, onMonitorsChange }: DragDropWrapperProps) {
-  const { buttons, setButtons } = useLauncherStore();
+  const { buttons, setButtons, folders, setFolders } = useLauncherStore();
   const { addLog } = useLogStore();
   const [activeButton, setActiveButton] = useState<Button | null>(null);
   const [activeMonitor, setActiveMonitor] = useState<Monitor | null>(null);
+  const [activeFolder, setActiveFolder] = useState<Folder | null>(null);
 
   // 根目录 droppable - 用于检测 isOver
   const { isOver: isRootOver } = useDroppable({
@@ -73,10 +77,18 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
       const monitor = monitors.find((m) => m.id === monitorId);
       setActiveMonitor(monitor || null);
       setActiveButton(null);
+      setActiveFolder(null);
+    } else if (activeId.startsWith('folder-')) {
+      const folderId = activeId.replace('folder-', '');
+      const folder = folders.find((f) => f.id === folderId);
+      setActiveFolder(folder || null);
+      setActiveButton(null);
+      setActiveMonitor(null);
     } else {
       const button = buttons.find((b) => b.id === activeId);
       setActiveButton(button || null);
       setActiveMonitor(null);
+      setActiveFolder(null);
     }
   };
 
@@ -84,11 +96,47 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
     const { active, over } = event;
     setActiveButton(null);
     setActiveMonitor(null);
+    setActiveFolder(null);
 
     if (!over) return;
 
     const activeId = String(active.id);
+    const overId = String(over.id);
     const isMonitor = activeId.startsWith('monitor-');
+    const isFolder = activeId.startsWith('folder-');
+
+    // 处理文件夹拖拽排序
+    if (isFolder) {
+      const folderId = activeId.replace('folder-', '');
+      const draggedFolder = folders.find((f) => f.id === folderId);
+      if (!draggedFolder) return;
+
+      // 文件夹之间排序
+      if (overId.startsWith('folder-') && activeId !== overId) {
+        const overFolderId = overId.replace('folder-', '');
+        const activeIndex = folders.findIndex((f) => f.id === folderId);
+        const overIndex = folders.findIndex((f) => f.id === overFolderId);
+
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const newFolders = arrayMove(folders, activeIndex, overIndex);
+          setFolders(newFolders);
+
+          // 更新位置到数据库
+          const updates = newFolders.map((f, index) => ({
+            id: f.id,
+            position: index,
+          }));
+
+          try {
+            await updateFolderPositions(updates);
+          } catch (error) {
+            console.error('更新文件夹位置失败:', error);
+            setFolders(folders);
+          }
+        }
+      }
+      return;
+    }
 
     // 处理监控拖拽
     if (isMonitor) {
@@ -97,8 +145,8 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
       if (!draggedMonitor) return;
 
       // 拖拽到文件夹
-      if (typeof over.id === 'string' && over.id.startsWith('folder-')) {
-        const folderId = over.id.replace('folder-', '');
+      if (overId.startsWith('folder-')) {
+        const folderId = overId.replace('folder-', '');
         if (draggedMonitor.folder_id !== folderId) {
           try {
             const updatedMonitor = { ...draggedMonitor, folder_id: folderId };
@@ -112,10 +160,10 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
       }
 
       // 拖拽到根目录
-      if (over.id === 'root-droppable' || 
-          over.id === 'root-droppable-bottom' || 
-          over.id === 'root-droppable-left' || 
-          over.id === 'root-droppable-right') {
+      if (overId === 'root-droppable' || 
+          overId === 'root-droppable-bottom' || 
+          overId === 'root-droppable-left' || 
+          overId === 'root-droppable-right') {
         if (draggedMonitor.folder_id !== null) {
           try {
             const updatedMonitor = { ...draggedMonitor, folder_id: null };
@@ -126,6 +174,50 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
           }
         }
         return;
+      }
+
+      // 监控之间排序
+      if (overId.startsWith('monitor-') && activeId !== overId) {
+        const overMonitorId = overId.replace('monitor-', '');
+        const overMonitor = monitors.find((m) => m.id === overMonitorId);
+        
+        // 确保在同一个容器内
+        if (overMonitor && draggedMonitor.folder_id === overMonitor.folder_id) {
+          const sameContainerMonitors = monitors.filter(m => m.folder_id === draggedMonitor.folder_id);
+          const otherMonitors = monitors.filter(m => m.folder_id !== draggedMonitor.folder_id);
+          
+          const activeIndex = sameContainerMonitors.findIndex((m) => m.id === monitorId);
+          const overIndex = sameContainerMonitors.findIndex((m) => m.id === overMonitorId);
+
+          if (activeIndex !== -1 && overIndex !== -1) {
+            // 重新排序同容器内的监控
+            const newSameContainerMonitors = arrayMove(sameContainerMonitors, activeIndex, overIndex);
+            
+            // 更新 position 属性
+            const updatedSameContainerMonitors = newSameContainerMonitors.map((m, index) => ({
+              ...m,
+              position: index,
+            }));
+            
+            // 合并所有监控并按 position 排序
+            const newMonitors = [...otherMonitors, ...updatedSameContainerMonitors].sort((a, b) => a.position - b.position);
+            
+            onMonitorsChange(newMonitors);
+
+            // 更新位置到数据库
+            const updates = updatedSameContainerMonitors.map((m) => ({
+              id: m.id,
+              position: m.position,
+            }));
+
+            try {
+              await updateMonitorPositions(updates);
+            } catch (error) {
+              console.error('更新监控位置失败:', error);
+              onMonitorsChange(monitors);
+            }
+          }
+        }
       }
       return;
     }
@@ -227,7 +319,7 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
   };
 
   return (
-    <DragDropContext.Provider value={{ activeButton, activeMonitor, isRootOver }}>
+    <DragDropContext.Provider value={{ activeButton, activeMonitor, activeFolder, isRootOver }}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -252,6 +344,10 @@ export default function DragDropWrapper({ children, monitors, onMonitorsChange }
                 monitor={activeMonitor}
                 onShowDetails={() => {}}
               />
+            </div>
+          ) : activeFolder ? (
+            <div className="opacity-90 scale-105 shadow-2xl">
+              <FolderCardPreview folder={activeFolder} />
             </div>
           ) : null}
         </DragOverlay>
