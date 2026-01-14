@@ -179,6 +179,8 @@ export default function MonitorForm({ monitor, onSave, onCancel }: MonitorFormPr
       is_active: false,
       last_check_time: null,
       last_status: null,
+      folder_id: monitor?.folder_id ?? null,
+      position: monitor?.position ?? 0,
     });
   };
 

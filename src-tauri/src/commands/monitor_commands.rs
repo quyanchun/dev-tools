@@ -20,10 +20,14 @@ pub async fn create_monitor(
 ) -> Result<Monitor, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
 
-    repository::create_monitor(&conn, &monitor)
+    // Generate a new UUID for the monitor
+    let mut new_monitor = monitor;
+    new_monitor.id = uuid::Uuid::new_v4().to_string();
+
+    repository::create_monitor(&conn, &new_monitor)
         .map_err(|e| format!("Failed to create monitor: {}", e))?;
 
-    Ok(monitor)
+    Ok(new_monitor)
 }
 
 /// Get all monitors
