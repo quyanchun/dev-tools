@@ -1,5 +1,5 @@
 use rusqlite::{Connection, Result};
-use super::models::{Button, LogEntry};
+use super::models::{Button, LogEntry, Monitor};
 
 // ============================================================================
 // Button CRUD Operations
@@ -221,5 +221,265 @@ pub fn get_logs_by_button(conn: &Connection, button_id: &str) -> Result<Vec<LogE
 /// Clear all logs
 pub fn clear_all_logs(conn: &Connection) -> Result<()> {
     conn.execute("DELETE FROM logs", [])?;
+    Ok(())
+}
+
+// ============================================================================
+// Monitor CRUD Operations
+// ============================================================================
+
+/// Create a new monitor in the database
+pub fn create_monitor(conn: &Connection, monitor: &Monitor) -> Result<String> {
+    conn.execute(
+        "INSERT INTO monitors (id, name, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        (
+            &monitor.id,
+            &monitor.name,
+            &monitor.monitor_type,
+            &monitor.target,
+            &monitor.check_interval,
+            &monitor.expected_result,
+            &monitor.alert_on_failure,
+            &monitor.is_active,
+            &monitor.last_check_time,
+            &monitor.last_status,
+            &monitor.created_at,
+        ),
+    )?;
+    Ok(monitor.id.clone())
+}
+
+/// Get all monitors
+pub fn get_all_monitors(conn: &Connection) -> Result<Vec<Monitor>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, created_at
+         FROM monitors ORDER BY created_at DESC",
+    )?;
+
+    let monitors = stmt
+        .query_map([], |row| {
+            Ok(Monitor {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                monitor_type: row.get(2)?,
+                target: row.get(3)?,
+                check_interval: row.get(4)?,
+                expected_result: row.get(5)?,
+                alert_on_failure: row.get(6)?,
+                is_active: row.get(7)?,
+                last_check_time: row.get(8)?,
+                last_status: row.get(9)?,
+                created_at: row.get(10)?,
+            })
+        })?
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(monitors)
+}
+
+/// Get a single monitor by ID
+pub fn get_monitor_by_id(conn: &Connection, id: &str) -> Result<Monitor> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, monitor_type, target, check_interval, expected_result,
+         alert_on_failure, is_active, last_check_time, last_status, created_at
+         FROM monitors WHERE id = ?1",
+    )?;
+
+    let monitor = stmt.query_row([id], |row| {
+        Ok(Monitor {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            monitor_type: row.get(2)?,
+            target: row.get(3)?,
+            check_interval: row.get(4)?,
+            expected_result: row.get(5)?,
+            alert_on_failure: row.get(6)?,
+            is_active: row.get(7)?,
+            last_check_time: row.get(8)?,
+            last_status: row.get(9)?,
+            created_at: row.get(10)?,
+        })
+    })?;
+
+    Ok(monitor)
+}
+
+/// Update an existing monitor
+pub fn update_monitor(conn: &Connection, id: &str, monitor: &Monitor) -> Result<()> {
+    conn.execute(
+        "UPDATE monitors
+         SET name = ?1, monitor_type = ?2, target = ?3, check_interval = ?4,
+             expected_result = ?5, alert_on_failure = ?6, is_active = ?7,
+             last_check_time = ?8, last_status = ?9
+         WHERE id = ?10",
+        (
+            &monitor.name,
+            &monitor.monitor_type,
+            &monitor.target,
+            &monitor.check_interval,
+            &monitor.expected_result,
+            &monitor.alert_on_failure,
+            &monitor.is_active,
+            &monitor.last_check_time,
+            &monitor.last_status,
+            id,
+        ),
+    )?;
+    Ok(())
+}
+
+/// Delete a monitor by ID
+pub fn delete_monitor(conn: &Connection, id: &str) -> Result<()> {
+    conn.execute("DELETE FROM monitors WHERE id = ?1", [id])?;
+    Ok(())
+}
+
+/// Update monitor status after a check
+pub fn update_monitor_status(
+    conn: &Connection,
+    id: &str,
+    status: &str,
+    last_check_time: i64,
+) -> Result<()> {
+    conn.execute(
+        "UPDATE monitors SET last_status = ?1, last_check_time = ?2 WHERE id = ?3",
+        (status, last_check_time, id),
+    )?;
+    Ok(())
+}
+
+/// Get logs for a specific monitor
+pub fn get_logs_by_monitor(conn: &Connection, monitor_id: &str) -> Result<Vec<LogEntry>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, button_id, monitor_id, level, message, timestamp
+         FROM logs WHERE monitor_id = ?1 ORDER BY timestamp DESC LIMIT 1000",
+    )?;
+
+    let logs = stmt
+        .query_map([monitor_id], |row| {
+            Ok(LogEntry {
+                id: row.get(0)?,
+                button_id: row.get(1)?,
+                monitor_id: row.get(2)?,
+                level: row.get(3)?,
+                message: row.get(4)?,
+                timestamp: row.get(5)?,
+            })
+        })?
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(logs)
+}
+
+// ============================================================================
+// Batch Operations
+// ============================================================================
+
+/// Batch update button positions
+pub fn update_button_positions(
+    conn: &Connection,
+    updates: &[(String, i32)], // (button_id, new_position)
+) -> Result<()> {
+    let now = chrono::Utc::now().timestamp();
+
+    for (id, position) in updates {
+        conn.execute(
+            "UPDATE buttons SET position = ?1, updated_at = ?2 WHERE id = ?3",
+            (position, now, id),
+        )?;
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// Folder Operations
+// ============================================================================
+
+/// Create a new folder
+pub fn create_folder(conn: &Connection, folder: &super::models::Folder) -> Result<String> {
+    conn.execute(
+        "INSERT INTO folders (id, name, icon, position, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        (
+            &folder.id,
+            &folder.name,
+            &folder.icon,
+            &folder.position,
+            &folder.created_at,
+        ),
+    )?;
+    Ok(folder.id.clone())
+}
+
+/// Get all folders ordered by position
+pub fn get_all_folders(conn: &Connection) -> Result<Vec<super::models::Folder>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, icon, position, created_at
+         FROM folders ORDER BY position",
+    )?;
+
+    let folders = stmt
+        .query_map([], |row| {
+            Ok(super::models::Folder {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                icon: row.get(2)?,
+                position: row.get(3)?,
+                created_at: row.get(4)?,
+            })
+        })?
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(folders)
+}
+
+/// Get a single folder by ID
+pub fn get_folder_by_id(conn: &Connection, id: &str) -> Result<super::models::Folder> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, icon, position, created_at
+         FROM folders WHERE id = ?1",
+    )?;
+
+    let folder = stmt.query_row([id], |row| {
+        Ok(super::models::Folder {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            icon: row.get(2)?,
+            position: row.get(3)?,
+            created_at: row.get(4)?,
+        })
+    })?;
+
+    Ok(folder)
+}
+
+/// Update an existing folder
+pub fn update_folder(conn: &Connection, id: &str, folder: &super::models::Folder) -> Result<()> {
+    conn.execute(
+        "UPDATE folders
+         SET name = ?1, icon = ?2, position = ?3
+         WHERE id = ?4",
+        (&folder.name, &folder.icon, &folder.position, id),
+    )?;
+    Ok(())
+}
+
+/// Delete a folder and move its buttons to root
+pub fn delete_folder(conn: &Connection, id: &str) -> Result<()> {
+    let now = chrono::Utc::now().timestamp();
+
+    // Move all buttons in this folder to root (folder_id = NULL)
+    conn.execute(
+        "UPDATE buttons SET folder_id = NULL, updated_at = ?1 WHERE folder_id = ?2",
+        (now, id),
+    )?;
+
+    // Delete the folder
+    conn.execute("DELETE FROM folders WHERE id = ?1", [id])?;
+
     Ok(())
 }

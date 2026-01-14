@@ -1,3 +1,12 @@
+/* 导入主题系统 */
+@import './styles/theme.css';
+
+/* 导入自定义动画 */
+@import './styles/animations.css';
+
+/* 导入 Launchpad 样式 */
+@import './styles/launchpad.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

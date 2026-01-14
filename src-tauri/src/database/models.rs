@@ -22,7 +22,7 @@ pub struct Folder {
     pub created_at: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Monitor {
     pub id: String,
     pub name: String,

@@ -1,0 +1,508 @@
+/* macOS Launchpad 风格的拖拽动画 */
+
+/* 拖拽时的视觉反馈 */
+.dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+  transform: scale(1.05);
+  transition: transform 0.2s ease-out;
+}
+
+/* 拖拽覆盖层 - macOS 风格 */
+.drag-overlay {
+  cursor: grabbing;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  transform: scale(1.08) rotate(3deg);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: brightness(1.1);
+}
+
+/* 拖拽手柄 */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.2s ease;
+}
+
+.drag-handle:hover {
+  transform: scale(1.02);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* 拖拽时禁用按钮交互 */
+.dragging button {
+  pointer-events: none;
+}
+
+/* 按钮卡片悬停效果 - macOS 风格 */
+.card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* 文件夹展开/收起动画 */
+.folder-content-enter {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-content-enter-active {
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.folder-content-exit {
+  max-height: 1000px;
+  opacity: 1;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-content-exit-active {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Drop zone 高亮效果 */
+.drop-zone-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+  border-radius: 12px;
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.8);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+/* 按钮网格平滑过渡 */
+.button-grid {
+  display: grid;
+  gap: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-grid > * {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 搜索高亮效果 */
+.search-highlight {
+  background: linear-gradient(120deg, #fef3c7 0%, #fde68a 100%);
+  padding: 2px 4px;
+  border-radius: 4px;
+  animation: highlight-fade 0.5s ease-out;
+}
+
+@keyframes highlight-fade {
+  from {
+    background: #fbbf24;
+  }
+  to {
+    background: linear-gradient(120deg, #fef3c7 0%, #fde68a 100%);
+  }
+}
+
+/* 按钮状态指示器动画 */
+.status-indicator {
+  position: relative;
+  display: inline-block;
+}
+
+.status-indicator.running::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* 文件夹图标动画 */
+.folder-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-open .folder-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* 平滑滚动 */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* macOS 风格的阴影 */
+.macos-shadow {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.macos-shadow-lg {
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 5px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== 玻璃态效果 ==================== */
+
+/* 基础玻璃卡片 */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 8px 32px rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 暗色模式下的玻璃态 */
+[data-theme="dark"] .glass-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Launchpad 按钮样式 - macOS 尺寸 */
+.launchpad-button {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.launchpad-button:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow:
+    0 16px 48px rgba(31, 38, 135, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .launchpad-button:hover {
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.launchpad-button:active {
+  transform: translateY(-2px) scale(1.02);
+  transition: all 0.1s ease;
+}
+
+/* 执行状态 - 成功 */
+.launchpad-button.status-success {
+  animation: success-flash 0.5s ease-out;
+}
+
+@keyframes success-flash {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    border-color: rgba(34, 197, 94, 0.8);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+}
+
+[data-theme="dark"] .launchpad-button.status-success {
+  animation: success-flash-dark 0.5s ease-out;
+}
+
+@keyframes success-flash-dark {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(34, 197, 94, 0.8);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+  }
+}
+
+/* 执行状态 - 失败 */
+.launchpad-button.status-error {
+  animation: error-flash 0.5s ease-out;
+}
+
+@keyframes error-flash {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  }
+}
+
+[data-theme="dark"] .launchpad-button.status-error {
+  animation: error-flash-dark 0.5s ease-out;
+}
+
+@keyframes error-flash-dark {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* ==================== 背景渐变 ==================== */
+
+/* Launchpad 背景 - 增强版 macOS 风格 */
+.launchpad-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  transition: background 0.5s ease;
+  overflow: hidden;
+}
+
+/* 亮色主题背景 - macOS 风格多层渐变 */
+[data-theme="light"] .launchpad-background {
+  background:
+    /* 顶部光晕 */
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139, 92, 246, 0.15), transparent),
+    /* 左侧光晕 */
+    radial-gradient(circle at 0% 50%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
+    /* 右下光晕 */
+    radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+    /* 中心光晕 */
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+    /* 基础渐变 */
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: 100% 100%;
+}
+
+/* 暗色主题背景 - macOS 风格深色渐变 */
+[data-theme="dark"] .launchpad-background {
+  background:
+    /* 顶部光晕 */
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99, 102, 241, 0.2), transparent),
+    /* 左侧光晕 */
+    radial-gradient(circle at 0% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    /* 右下光晕 */
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+    /* 中心光晕 */
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 60%),
+    /* 基础渐变 */
+    linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #581c87 100%);
+  background-size: 100% 100%;
+}
+
+/* 背景动画效果（可选） */
+@keyframes background-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 添加微妙的噪点纹理 */
+.launchpad-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 4px
+    );
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .launchpad-background::before {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
+    );
+}
+
+/* 玻璃态 Header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .glass-header {
+  background: rgba(15, 23, 42, 0.75);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 玻璃态面板 */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .glass-panel {
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 玻璃态模态框 */
+.glass-modal {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+}
+
+[data-theme="dark"] .glass-modal {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* 旧的玻璃态效果 - 保留兼容性 */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .glass-effect {
+  background: rgba(31, 41, 55, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 弹性动画 */
+.bounce-in {
+  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 淡入动画 */
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滑入动画 */
+.slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 缩放动画 */
+.scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

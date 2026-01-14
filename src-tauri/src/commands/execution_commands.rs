@@ -1,22 +1,21 @@
-use rusqlite::Connection;
-use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::mpsc;
 
 use crate::database::models::LogEntry;
 use crate::database::repository;
 use crate::executor::{ShellExecutor, PythonExecutor, JsExecutor};
+use super::DbConnection;
 
 /// Execute a script from a button
 #[tauri::command]
 pub async fn execute_script(
     button_id: String,
     app_handle: AppHandle,
-    state: State<'_, Mutex<Connection>>,
+    db: State<'_, DbConnection>,
 ) -> Result<String, String> {
     // Get button from database
     let button = {
-        let conn = state.lock().map_err(|e| e.to_string())?;
+        let conn = db.0.lock().map_err(|e| e.to_string())?;
         repository::get_button_by_id(&conn, &button_id)
             .map_err(|e| format!("Failed to get button: {}", e))?
     };
@@ -34,8 +33,8 @@ pub async fn execute_script(
     tokio::spawn(async move {
         while let Some(log_entry) = log_rx.recv().await {
             // Save log to database using app_handle's managed state
-            if let Some(db_state) = app_handle_clone.try_state::<Mutex<Connection>>() {
-                if let Ok(conn) = db_state.lock() {
+            if let Some(db_state) = app_handle_clone.try_state::<DbConnection>() {
+                if let Ok(conn) = db_state.0.lock() {
                     let _ = repository::create_log(&conn, &log_entry);
                 }
             }

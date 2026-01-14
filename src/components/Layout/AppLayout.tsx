@@ -3,9 +3,15 @@ import Header from './Header';
 
 export default function AppLayout() {
   return (
-    <div className="h-screen flex flex-col bg-base-200">
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* 全局背景 */}
+      <div className="launchpad-background"></div>
+
+      {/* Header */}
       <Header />
-      <main className="flex-1 overflow-hidden">
+
+      {/* 主内容区 */}
+      <main className="flex-1 overflow-hidden relative">
         <Outlet />
       </main>
     </div>

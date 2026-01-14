@@ -64,11 +64,11 @@ export default function LogPanel() {
   };
 
   return (
-    <div className="border-t border-base-300 bg-base-200">
+    <div className="glass-panel border-t border-base-300">
       {/* 头部 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-base-100 border-b border-base-300">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-base-300">
         <button
-          className="flex items-center gap-2 font-semibold hover:text-primary transition-colors"
+          className="flex items-center gap-2 font-semibold hover:text-primary transition-colors cursor-pointer"
           onClick={() => togglePanel()}
         >
           <svg
@@ -117,7 +117,7 @@ export default function LogPanel() {
               {logs.map((log) => (
                 <div
                   key={log.id}
-                  className={`flex items-start gap-2 p-2 rounded ${getLogBgColor(log.level)}`}
+                  className={`flex items-start gap-2 p-2 rounded-lg ${getLogBgColor(log.level)}`}
                 >
                   <div className="flex-shrink-0 mt-0.5">{getLevelIcon(log.level)}</div>
                   <div className="flex-1 min-w-0">

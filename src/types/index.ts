@@ -25,7 +25,7 @@ export interface Monitor {
   id: string;
   name: string;
   icon?: string | null;
-  monitor_type: 'process' | 'api';
+  monitor_type: 'process' | 'api' | 'port';
   target: string;
   check_interval: number;
   expected_result?: string | null;

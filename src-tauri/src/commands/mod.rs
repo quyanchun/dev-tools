@@ -1,19 +1,22 @@
 mod button_commands;
 mod log_commands;
 mod execution_commands;
+mod monitor_commands;
 
-use rusqlite::Connection;
-use std::sync::Mutex;
 use tauri::State;
+
+// Shared state types
+pub use monitor_commands::{DbConnection, MonitorManagerState};
 
 // Re-export commands
 pub use button_commands::*;
 pub use log_commands::*;
 pub use execution_commands::*;
+pub use monitor_commands::*;
 
 #[tauri::command]
-pub fn test_db_connection(db: State<Mutex<Connection>>) -> Result<String, String> {
-    let conn = db.lock().map_err(|e| e.to_string())?;
+pub fn test_db_connection(db: State<DbConnection>) -> Result<String, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
 
     // 测试查询
     let count: i32 = conn
