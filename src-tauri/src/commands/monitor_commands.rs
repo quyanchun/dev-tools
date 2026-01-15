@@ -97,7 +97,7 @@ pub async fn start_monitor(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("dev-tools.db")
+        .join("devtools.db")
         .to_string_lossy()
         .to_string();
 
@@ -124,8 +124,9 @@ pub async fn stop_monitor(
     manager: State<'_, MonitorManagerState>,
     id: String,
 ) -> Result<(), String> {
-    // Stop the monitor
-    manager.0.stop_monitor(&id).await?;
+    // Try to stop the monitor (ignore error if not running)
+    // This handles the case where app was restarted but is_active was still true in DB
+    let _ = manager.0.stop_monitor(&id).await;
 
     // Update is_active in database
     let conn = db.0.lock().map_err(|e| e.to_string())?;

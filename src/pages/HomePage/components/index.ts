@@ -7,3 +7,5 @@ export { default as DraggableMonitorCard } from './DraggableMonitorCard';
 export { default as DragDropWrapper } from './DragDropWrapper';
 export { default as ButtonModal } from './ButtonModal';
 export { default as MonitorModal } from './MonitorModal';
+export { getTargetStatusDisplay } from './monitorStatusUtils';
+export type { TargetStatusDisplay } from './monitorStatusUtils';

@@ -1,4 +1,5 @@
 import type { Monitor } from '../../../types';
+import { getTargetStatusDisplay } from './monitorStatusUtils';
 
 interface MonitorCardProps {
   monitor: Monitor;
@@ -36,58 +37,34 @@ export default function MonitorCard({ monitor, onShowDetails }: MonitorCardProps
     }
   };
 
-  const getStatusDisplay = () => {
-    switch (monitor.last_status) {
-      case 'running':
-        return {
-          icon: (
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-          ),
-          text: '运行中',
-          color: 'text-success',
-        };
-      case 'error':
-        return {
-          icon: (
-            <div className="w-2 h-2 rounded-full bg-error animate-blink"></div>
-          ),
-          text: '异常',
-          color: 'text-error',
-        };
-      case 'checking':
-        return {
-          icon: (
-            <div className="w-2 h-2 rounded-full bg-warning animate-pulse"></div>
-          ),
-          text: '检查中',
-          color: 'text-warning',
-        };
-      default:
-        return {
-          icon: (
-            <div className="w-2 h-2 rounded-full bg-info"></div>
-          ),
-          text: '活动',
-          color: 'text-info',
-        };
-    }
-  };
+  // 使用 getTargetStatusDisplay 获取状态显示配置
+  const statusDisplay = getTargetStatusDisplay(monitor);
 
-  const status = getStatusDisplay();
+  // 根据 is_active 决定卡片样式类
+  // Requirements: 1.2, 1.3, 3.4
+  const cardClassName = monitor.is_active
+    ? 'glass-card cursor-pointer hover:scale-105 transition-transform duration-200 w-[120px] h-[120px]'
+    : 'glass-card cursor-pointer hover:scale-105 transition-transform duration-200 w-[120px] h-[120px] monitor-card-inactive';
+
+  // 根据动画类型获取动画类名
+  const getAnimationClass = () => {
+    if (!statusDisplay.animate) return '';
+    return statusDisplay.animationType === 'pulse' ? 'animate-pulse' : 'animate-blink';
+  };
 
   return (
     <div
-      className="glass-card cursor-pointer hover:scale-105 transition-transform duration-200 w-[120px] h-[120px]"
+      className={cardClassName}
       onClick={() => onShowDetails(monitor)}
     >
       <div className="p-3 flex flex-col h-full">
         {/* 图标区域 - 包含状态指示 */}
         <div className="flex-1 flex flex-col items-center justify-center mb-2">
           <div className="text-primary scale-75">{getMonitorIcon()}</div>
-          {/* 状态指示 */}
-          <div className={`flex items-center gap-1 text-[10px] mt-1 ${status.color}`}>
-            {status.icon}
-            <span>{status.text}</span>
+          {/* 目标状态指示器 - Requirements: 2.1, 2.2, 2.3, 2.4 */}
+          <div className={`flex items-center gap-1 text-[10px] mt-1 ${statusDisplay.color}`}>
+            <div className={`w-2 h-2 rounded-full ${statusDisplay.dot} ${getAnimationClass()}`}></div>
+            <span>{statusDisplay.text}</span>
           </div>
         </div>
 

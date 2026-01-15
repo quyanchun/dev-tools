@@ -19,7 +19,21 @@ pub fn run() {
             let monitor_manager = Arc::new(MonitorManager::new());
 
             app.manage(commands::DbConnection(Mutex::new(conn)));
-            app.manage(commands::MonitorManagerState(monitor_manager));
+            app.manage(commands::MonitorManagerState(monitor_manager.clone()));
+
+            // Get database path for monitor restoration
+            let db_path = app.path()
+                .app_data_dir()
+                .expect("Failed to get app data dir")
+                .join("devtools.db")
+                .to_string_lossy()
+                .to_string();
+
+            // Restore active monitors on startup
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                restore_active_monitors(app_handle, monitor_manager, db_path).await;
+            });
 
             Ok(())
         })
@@ -60,4 +74,41 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Restore monitors that were active before app shutdown
+async fn restore_active_monitors(
+    app_handle: tauri::AppHandle,
+    monitor_manager: Arc<MonitorManager>,
+    db_path: String,
+) {
+    // Open database connection
+    let conn = match rusqlite::Connection::open(&db_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to open database for monitor restoration: {}", e);
+            return;
+        }
+    };
+
+    // Get all monitors that were active
+    let monitors = match database::repository::get_all_monitors(&conn) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Failed to get monitors for restoration: {}", e);
+            return;
+        }
+    };
+
+    // Start each active monitor
+    for monitor in monitors {
+        if monitor.is_active {
+            if let Err(e) = monitor_manager
+                .start_monitor(monitor.clone(), app_handle.clone(), db_path.clone())
+                .await
+            {
+                eprintln!("Failed to restore monitor {}: {}", monitor.name, e);
+            }
+        }
+    }
 }

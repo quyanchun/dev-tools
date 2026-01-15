@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import type { Button, LogEntry, Monitor, Folder } from '../types';
+import type { Button, LogEntry, Monitor, Folder, TargetStatus } from '../types';
 
 // ============================================================================
 // Unified Item Types
@@ -166,7 +166,7 @@ export async function getMonitorLogs(monitorId: string): Promise<LogEntry[]> {
 
 // Monitor event listeners
 export async function listenToMonitorStatus(
-  callback: (status: { monitor_id: string; status: string; last_check_time: number; message?: string }) => void
+  callback: (status: { monitor_id: string; status: TargetStatus; last_check_time: number; message?: string }) => void
 ): Promise<UnlistenFn> {
   return await listen('monitor-status-update', (event) => {
     callback(event.payload as any);
@@ -174,7 +174,7 @@ export async function listenToMonitorStatus(
 }
 
 export async function listenToMonitorAlert(
-  callback: (alert: { monitor_id: string; status: string; last_check_time: number; message?: string }) => void
+  callback: (alert: { monitor_id: string; status: TargetStatus; last_check_time: number; message?: string }) => void
 ): Promise<UnlistenFn> {
   return await listen('monitor-alert', (event) => {
     callback(event.payload as any);

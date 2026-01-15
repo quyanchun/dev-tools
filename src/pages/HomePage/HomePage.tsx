@@ -94,7 +94,17 @@ export default function HomePage() {
   useEffect(() => {
     const setup = async () => {
       monitorStatusListenerRef.current = await listenToMonitorStatus((status) => {
+        // Update both monitorStore and unifiedStore to keep UI in sync
         updateMonitorStatus(status.monitor_id, { last_status: status.status, last_check_time: status.last_check_time });
+        
+        // Also update unifiedStore directly since MonitorCard uses data from there
+        const unifiedStore = useUnifiedStore.getState();
+        const item = unifiedStore.items.find(i => i.id === status.monitor_id);
+        if (item && item.type === 'monitor') {
+          unifiedStore.updateItem(status.monitor_id, {
+            data: { ...item.data, last_status: status.status, last_check_time: status.last_check_time },
+          });
+        }
       });
       monitorAlertListenerRef.current = await listenToMonitorAlert((alert) => {
         if (alert.message) {

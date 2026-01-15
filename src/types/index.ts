@@ -32,7 +32,7 @@ export interface Monitor {
   alert_on_failure: boolean;
   is_active: boolean;
   last_check_time?: number | null;
-  last_status?: string | null;
+  last_status?: TargetStatus | null;
   folder_id?: string | null;
   position: number;
   created_at: number;
@@ -51,5 +51,8 @@ export interface LogEntry {
 // 执行状态
 export type ExecutionStatus = 'idle' | 'running' | 'success' | 'error';
 
-// 监控状态
+// 目标状态 - 被监控目标的状态
+export type TargetStatus = 'running' | 'stopped' | 'checking' | 'error';
+
+// 监控状态 (deprecated - use TargetStatus instead)
 export type MonitorStatus = 'stopped' | 'running' | 'checking' | 'alert';
